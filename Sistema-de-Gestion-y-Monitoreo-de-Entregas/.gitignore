@@ -1,0 +1,36 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# Java
+*.class
+*.jar
+*.war
+
+# Logs del sistema
+*.log
+logs/
+
+# NetBeans
+nbproject/private/
+nbactions.xml
+nb-configuration.xml
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Configuración local (credenciales DB, etc.)
+config.properties
