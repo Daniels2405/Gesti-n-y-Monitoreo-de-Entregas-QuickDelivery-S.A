@@ -1,5 +1,6 @@
 package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.util;
 
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
 import java.io.*;
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -53,7 +54,7 @@ public class Logger {
             ps.setTimestamp(4, Timestamp.valueOf(ahora));
             ps.executeUpdate();
 
-        } catch (SQLException e) {
+        } catch (ConexionException | SQLException e) {
             // Si la BD no está lista aún, el archivo ya tiene el registro
             System.err.println("ERROR escribiendo log en BD: " + e.getMessage());
         }
