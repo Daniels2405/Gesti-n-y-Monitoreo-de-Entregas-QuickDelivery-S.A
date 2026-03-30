@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Objeto de acceso a datos (DAO) para la entidad {@link Paquete}.
  *
- * <p>Proporciona operaciones CRUD sobre la tabla {@code PAQUETE} de la base
+ * <p>Proporciona operaciones CRUD sobre la tabla {@code paquete} de la base
  * de datos, haciendo uso de {@link ConexionDB} para obtener conexiones.</p>
  *
  * @author QuickDelivery S.A.
@@ -30,8 +30,8 @@ public class PaqueteDAO {
     public List<Paquete> obtenerTodos() throws ConexionException, SQLException {
         List<Paquete> lista = new ArrayList<>();
         String sql = "SELECT p.id_paquete, p.codigo, p.descripcion, p.peso, ep.nombre AS estado " +
-                     "FROM PAQUETE p " +
-                     "JOIN ESTADO_PAQUETE ep ON p.id_estado_paquete = ep.id_estado_paquete";
+                     "FROM paquete p" +
+                     "JOIN estado_paquete ep ON p.id_estado = ep.id_estado";
 
         try (Connection conexion = ConexionDB.getConexion();
              Statement stm = conexion.createStatement();
@@ -54,8 +54,8 @@ public class PaqueteDAO {
      */
     public Paquete obtenerPorId(int id) throws ConexionException, SQLException {
         String sql = "SELECT p.id_paquete, p.codigo, p.descripcion, p.peso, ep.nombre AS estado " +
-                     "FROM PAQUETE p " +
-                     "JOIN ESTADO_PAQUETE ep ON p.id_estado_paquete = ep.id_estado_paquete " +
+                     "FROM paquete p" +
+                     "JOIN estado_paquete ep ON p.id_estado = ep.id_estado " +
                      "WHERE p.id_paquete = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
@@ -82,14 +82,14 @@ public class PaqueteDAO {
     public List<Paquete> obtenerPorEstado(EstadoPaquete estado) throws ConexionException, SQLException {
         List<Paquete> lista = new ArrayList<>();
         String sql = "SELECT p.id_paquete, p.codigo, p.descripcion, p.peso, ep.nombre AS estado " +
-                     "FROM PAQUETE p " +
-                     "JOIN ESTADO_PAQUETE ep ON p.id_estado_paquete = ep.id_estado_paquete " +
+                     "FROM paquete p" +
+                     "JOIN estado_paquete ep ON p.id_estado = ep.id_estado " +
                      "WHERE ep.nombre = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
 
-            ps.setString(1, estado.name());
+            ps.setString(1, estado.toDbString());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     lista.add(mapearPaquete(rs));
@@ -108,9 +108,9 @@ public class PaqueteDAO {
      * @throws SQLException      si ocurre un error durante la inserción SQL.
      */
     public boolean insertar(Paquete paquete) throws ConexionException, SQLException {
-        String sql = "INSERT INTO PAQUETE (codigo, descripcion, peso, id_estado_paquete) " +
+        String sql = "INSERT INTO paquete (codigo, descripcion, peso, id_estado) " +
                      "VALUES (?, ?, ?, " +
-                     "(SELECT id_estado_paquete FROM ESTADO_PAQUETE WHERE nombre = ?))";
+                     "(SELECT id_estado FROM estado_paquete WHERE nombre = ?))";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
@@ -118,7 +118,7 @@ public class PaqueteDAO {
             ps.setString(1, paquete.getCodigo());
             ps.setString(2, paquete.getDescripcion());
             ps.setDouble(3, paquete.getPeso());
-            ps.setString(4, paquete.getEstado().name());
+            ps.setString(4, paquete.getEstado().toDbString());
             return ps.executeUpdate() > 0;
         }
     }
@@ -132,8 +132,8 @@ public class PaqueteDAO {
      * @throws SQLException      si ocurre un error durante la actualización SQL.
      */
     public boolean actualizar(Paquete paquete) throws ConexionException, SQLException {
-        String sql = "UPDATE PAQUETE SET codigo = ?, descripcion = ?, peso = ?, " +
-                     "id_estado_paquete = (SELECT id_estado_paquete FROM ESTADO_PAQUETE WHERE nombre = ?) " +
+        String sql = "UPDATE paquete SET codigo = ?, descripcion = ?, peso = ?, " +
+                     "id_estado = (SELECT id_estado FROM estado_paquete WHERE nombre = ?) " +
                      "WHERE id_paquete = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
@@ -142,7 +142,7 @@ public class PaqueteDAO {
             ps.setString(1, paquete.getCodigo());
             ps.setString(2, paquete.getDescripcion());
             ps.setDouble(3, paquete.getPeso());
-            ps.setString(4, paquete.getEstado().name());
+            ps.setString(4, paquete.getEstado().toDbString());
             ps.setInt(5, paquete.getId());
             return ps.executeUpdate() > 0;
         }
@@ -157,7 +157,7 @@ public class PaqueteDAO {
      * @throws SQLException      si ocurre un error durante la eliminación SQL.
      */
     public boolean eliminar(int id) throws ConexionException, SQLException {
-        String sql = "DELETE FROM PAQUETE WHERE id_paquete = ?";
+        String sql = "DELETE FROM paquete WHERE id_paquete = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
@@ -181,7 +181,7 @@ public class PaqueteDAO {
                 rs.getString("codigo"),
                 rs.getString("descripcion"),
                 rs.getDouble("peso"),
-                EstadoPaquete.valueOf(rs.getString("estado"))
+                EstadoPaquete.fromString(rs.getString("estado"))
         );
     }
 }

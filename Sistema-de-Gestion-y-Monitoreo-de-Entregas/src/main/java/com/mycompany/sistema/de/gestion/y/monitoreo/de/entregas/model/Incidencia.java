@@ -25,6 +25,9 @@ public class Incidencia {
     /** Identificador del paquete afectado por la incidencia. */
     private int idPaquete;
 
+    /** Identificador del conductor que reportó la incidencia. */
+    private int idConductor;
+
     /**
      * Constructor sin argumentos requerido para frameworks de persistencia
      * y deserialización.
@@ -35,16 +38,19 @@ public class Incidencia {
     /**
      * Construye una incidencia con todos sus atributos.
      *
-     * @param id          identificador único de la incidencia.
-     * @param descripcion descripción del problema ocurrido.
-     * @param fecha       fecha y hora en que se registró la incidencia.
-     * @param idPaquete   id del paquete afectado.
+     * @param id           identificador único de la incidencia.
+     * @param descripcion  descripción del problema ocurrido.
+     * @param fecha        fecha y hora en que se registró la incidencia.
+     * @param idPaquete    id del paquete afectado.
+     * @param idConductor  id del conductor que reportó la incidencia.
      */
-    public Incidencia(int id, String descripcion, LocalDateTime fecha, int idPaquete) {
+    public Incidencia(int id, String descripcion, LocalDateTime fecha,
+                      int idPaquete, int idConductor) {
         this.id = id;
         this.descripcion = descripcion;
         this.fecha = fecha;
         this.idPaquete = idPaquete;
+        this.idConductor = idConductor;
     }
 
     /**
@@ -120,6 +126,24 @@ public class Incidencia {
     }
 
     /**
+     * Retorna el identificador del conductor que reportó la incidencia.
+     *
+     * @return id del conductor.
+     */
+    public int getIdConductor() {
+        return idConductor;
+    }
+
+    /**
+     * Establece el identificador del conductor que reportó la incidencia.
+     *
+     * @param idConductor id del conductor.
+     */
+    public void setIdConductor(int idConductor) {
+        this.idConductor = idConductor;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -129,6 +153,7 @@ public class Incidencia {
                 ", descripcion='" + descripcion + '\'' +
                 ", fecha=" + fecha +
                 ", idPaquete=" + idPaquete +
+                ", idConductor=" + idConductor +
                 '}';
     }
 }

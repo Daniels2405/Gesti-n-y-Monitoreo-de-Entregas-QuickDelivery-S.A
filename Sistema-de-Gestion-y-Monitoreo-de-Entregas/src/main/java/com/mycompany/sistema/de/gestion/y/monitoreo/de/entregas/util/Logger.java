@@ -43,15 +43,13 @@ public class Logger {
             System.err.println("ERROR escribiendo log en archivo: " + e.getMessage());
         }
 
-        // 2) Escribir en BD
-        String sql = "INSERT INTO AUDITORIA_LOG (usuario, accion, detalle, fecha) VALUES (?, ?, ?, ?)";
+        // 2) Escribir en BD — id_usuario NULL porque Logger opera con texto, no con FK
+        String accionCompleta = "[" + accion + "] " + usuario + " - " + detalle;
+        String sql = "INSERT INTO auditoria_log (id_usuario, accion) VALUES (NULL, ?)";
         try (Connection connection = ConexionDB.getConexion();
              PreparedStatement ps = connection.prepareStatement(sql)) {
 
-            ps.setString(1, usuario);
-            ps.setString(2, accion);
-            ps.setString(3, detalle);
-            ps.setTimestamp(4, Timestamp.valueOf(ahora));
+            ps.setString(1, accionCompleta);
             ps.executeUpdate();
 
         } catch (ConexionException | SQLException e) {

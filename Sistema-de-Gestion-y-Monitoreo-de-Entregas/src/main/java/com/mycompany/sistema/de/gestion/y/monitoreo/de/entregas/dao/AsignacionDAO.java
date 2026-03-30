@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Objeto de acceso a datos (DAO) para la entidad {@link Asignacion}.
  *
- * <p>Proporciona operaciones CRUD sobre la tabla {@code ASIGNACION} de la base
+ * <p>Proporciona operaciones CRUD sobre la tabla {@code asignacion} de la base
  * de datos. Al mapear un registro, delega en {@link VehiculoDAO} y
  * {@link PaqueteDAO} para cargar los objetos relacionados.</p>
  *
@@ -34,7 +34,7 @@ public class AsignacionDAO {
      */
     public List<Asignacion> obtenerTodas() throws ConexionException, SQLException {
         List<Asignacion> lista = new ArrayList<>();
-        String sql = "SELECT id_asignacion, id_vehiculo, id_paquete, fecha FROM ASIGNACION";
+        String sql = "SELECT id_asig, id_vehiculo, id_paquete, fecha_asig FROM asignacion";
 
         try (Connection conexion = ConexionDB.getConexion();
              Statement stm = conexion.createStatement();
@@ -56,7 +56,7 @@ public class AsignacionDAO {
      * @throws SQLException      si ocurre un error durante la consulta SQL.
      */
     public Asignacion obtenerPorId(int id) throws ConexionException, SQLException {
-        String sql = "SELECT id_asignacion, id_vehiculo, id_paquete, fecha FROM ASIGNACION WHERE id_asignacion = ?";
+        String sql = "SELECT id_asig, id_vehiculo, id_paquete, fecha_asig FROM asignacion WHERE id_asig = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
@@ -80,14 +80,13 @@ public class AsignacionDAO {
      * @throws SQLException      si ocurre un error durante la inserción SQL.
      */
     public boolean insertar(Asignacion asignacion) throws ConexionException, SQLException {
-        String sql = "INSERT INTO ASIGNACION (id_vehiculo, id_paquete, fecha) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO asignacion (id_vehiculo, id_paquete) VALUES (?, ?)";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
 
             ps.setInt(1, asignacion.getVehiculo().getId());
             ps.setInt(2, asignacion.getPaquete().getId());
-            ps.setTimestamp(3, Timestamp.valueOf(asignacion.getFecha()));
             return ps.executeUpdate() > 0;
         }
     }
@@ -101,7 +100,7 @@ public class AsignacionDAO {
      * @throws SQLException      si ocurre un error durante la eliminación SQL.
      */
     public boolean eliminar(int id) throws ConexionException, SQLException {
-        String sql = "DELETE FROM ASIGNACION WHERE id_asignacion = ?";
+        String sql = "DELETE FROM asignacion WHERE id_asig = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
@@ -121,8 +120,8 @@ public class AsignacionDAO {
      * @throws SQLException      si ocurre un error al leer el ResultSet.
      */
     private Asignacion mapearAsignacion(ResultSet rs) throws ConexionException, SQLException {
-        int id = rs.getInt("id_asignacion");
-        LocalDateTime fecha = rs.getTimestamp("fecha").toLocalDateTime();
+        int id = rs.getInt("id_asig");
+        LocalDateTime fecha = rs.getTimestamp("fecha_asig").toLocalDateTime();
         Vehiculo vehiculo = vehiculoDAO.obtenerPorId(rs.getInt("id_vehiculo"));
         Paquete paquete = paqueteDAO.obtenerPorId(rs.getInt("id_paquete"));
         return new Asignacion(id, vehiculo, paquete, fecha);

@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Objeto de acceso a datos (DAO) para la entidad {@link Vehiculo}.
  *
- * <p>Proporciona operaciones CRUD sobre la tabla {@code VEHICULO} de la base
+ * <p>Proporciona operaciones CRUD sobre la tabla {@code vehiculo} de la base
  * de datos, haciendo uso de {@link ConexionDB} para obtener conexiones y
  * mapeando los resultados a las subclases concretas
  * ({@link Camion}, {@link Moto}, {@link Furgon}) según el tipo registrado.</p>
@@ -33,11 +33,11 @@ public class VehiculoDAO {
      */
     public List<Vehiculo> obtenerTodos() throws ConexionException, SQLException {
         List<Vehiculo> lista = new ArrayList<>();
-        String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad_maxima, " +
+        String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad, " +
                      "tv.nombre AS tipo, ev.nombre AS estado " +
-                     "FROM VEHICULO v " +
-                     "JOIN TIPO_VEHICULO tv ON v.id_tipo_vehiculo = tv.id_tipo_vehiculo " +
-                     "JOIN ESTADO_VEHICULO ev ON v.id_estado_vehiculo = ev.id_estado_vehiculo";
+                     "FROM vehiculo v " +
+                     "JOIN tipo_vehiculo tv ON v.id_tipo   = tv.id_tipo " +
+                     "JOIN estado_vehiculo ev ON v.id_estado = ev.id_estado";
 
         try (Connection conexion = ConexionDB.getConexion();
              Statement stm = conexion.createStatement();
@@ -59,12 +59,12 @@ public class VehiculoDAO {
      */
     public List<Vehiculo> obtenerDisponibles() throws ConexionException, SQLException {
         List<Vehiculo> lista = new ArrayList<>();
-        String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad_maxima, " +
+        String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad, " +
                      "tv.nombre AS tipo, ev.nombre AS estado " +
-                     "FROM VEHICULO v " +
-                     "JOIN TIPO_VEHICULO tv ON v.id_tipo_vehiculo = tv.id_tipo_vehiculo " +
-                     "JOIN ESTADO_VEHICULO ev ON v.id_estado_vehiculo = ev.id_estado_vehiculo " +
-                     "WHERE ev.nombre = 'DISPONIBLE'";
+                     "FROM vehiculo v " +
+                     "JOIN tipo_vehiculo tv ON v.id_tipo   = tv.id_tipo " +
+                     "JOIN estado_vehiculo ev ON v.id_estado = ev.id_estado " +
+                     "WHERE ev.nombre = 'disponible'";
 
         try (Connection conexion = ConexionDB.getConexion();
              Statement stm = conexion.createStatement();
@@ -86,11 +86,11 @@ public class VehiculoDAO {
      * @throws SQLException      si ocurre un error durante la consulta SQL.
      */
     public Vehiculo obtenerPorId(int id) throws ConexionException, SQLException {
-        String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad_maxima, " +
+        String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad, " +
                      "tv.nombre AS tipo, ev.nombre AS estado " +
-                     "FROM VEHICULO v " +
-                     "JOIN TIPO_VEHICULO tv ON v.id_tipo_vehiculo = tv.id_tipo_vehiculo " +
-                     "JOIN ESTADO_VEHICULO ev ON v.id_estado_vehiculo = ev.id_estado_vehiculo " +
+                     "FROM vehiculo v " +
+                     "JOIN tipo_vehiculo tv ON v.id_tipo   = tv.id_tipo " +
+                     "JOIN estado_vehiculo ev ON v.id_estado = ev.id_estado " +
                      "WHERE v.id_vehiculo = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
@@ -106,20 +106,19 @@ public class VehiculoDAO {
         return null;
     }
 
-
     /**
      * Inserta un nuevo vehículo en la base de datos.
      *
-     * @param vehiculo vehículo a insertar; su tipo concreto determina el {@code TIPO_VEHICULO}.
+     * @param vehiculo vehículo a insertar; su tipo concreto determina el {@code tipo_vehiculo}.
      * @return {@code true} si se insertó al menos una fila; {@code false} en caso contrario.
      * @throws ConexionException si no se puede obtener una conexión a la base de datos.
      * @throws SQLException      si ocurre un error durante la inserción SQL.
      */
     public boolean insertar(Vehiculo vehiculo) throws ConexionException, SQLException {
-        String sql = "INSERT INTO VEHICULO (placa, capacidad_maxima, id_tipo_vehiculo, id_estado_vehiculo) " +
+        String sql = "INSERT INTO vehiculo (placa, capacidad, id_tipo, id_estado) " +
                      "VALUES (?, ?, " +
-                     "(SELECT id_tipo_vehiculo FROM TIPO_VEHICULO WHERE nombre = ?), " +
-                     "(SELECT id_estado_vehiculo FROM ESTADO_VEHICULO WHERE nombre = ?))";
+                     "(SELECT id_tipo  FROM tipo_vehiculo   WHERE nombre = ?), " +
+                     "(SELECT id_estado FROM estado_vehiculo WHERE nombre = ?))";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
@@ -127,7 +126,7 @@ public class VehiculoDAO {
             ps.setString(1, vehiculo.getPlaca());
             ps.setDouble(2, vehiculo.getCapacidadMaxima());
             ps.setString(3, obtenerNombreTipo(vehiculo));
-            ps.setString(4, vehiculo.getEstado().name());
+            ps.setString(4, vehiculo.getEstado().toDbString());
             return ps.executeUpdate() > 0;
         }
     }
@@ -141,8 +140,8 @@ public class VehiculoDAO {
      * @throws SQLException      si ocurre un error durante la actualización SQL.
      */
     public boolean actualizar(Vehiculo vehiculo) throws ConexionException, SQLException {
-        String sql = "UPDATE VEHICULO SET placa = ?, capacidad_maxima = ?, " +
-                     "id_estado_vehiculo = (SELECT id_estado_vehiculo FROM ESTADO_VEHICULO WHERE nombre = ?) " +
+        String sql = "UPDATE vehiculo SET placa = ?, capacidad = ?, " +
+                     "id_estado = (SELECT id_estado FROM estado_vehiculo WHERE nombre = ?) " +
                      "WHERE id_vehiculo = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
@@ -150,7 +149,7 @@ public class VehiculoDAO {
 
             ps.setString(1, vehiculo.getPlaca());
             ps.setDouble(2, vehiculo.getCapacidadMaxima());
-            ps.setString(3, vehiculo.getEstado().name());
+            ps.setString(3, vehiculo.getEstado().toDbString());
             ps.setInt(4, vehiculo.getId());
             return ps.executeUpdate() > 0;
         }
@@ -165,7 +164,7 @@ public class VehiculoDAO {
      * @throws SQLException      si ocurre un error durante la eliminación SQL.
      */
     public boolean eliminar(int id) throws ConexionException, SQLException {
-        String sql = "DELETE FROM VEHICULO WHERE id_vehiculo = ?";
+        String sql = "DELETE FROM vehiculo WHERE id_vehiculo = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
@@ -186,29 +185,29 @@ public class VehiculoDAO {
     private Vehiculo mapearVehiculo(ResultSet rs) throws SQLException {
         int id = rs.getInt("id_vehiculo");
         String placa = rs.getString("placa");
-        double capacidad = rs.getDouble("capacidad_maxima");
-        EstadoVehiculo estado = EstadoVehiculo.valueOf(rs.getString("estado"));
+        double capacidad = rs.getDouble("capacidad");
+        EstadoVehiculo estado = EstadoVehiculo.fromString(rs.getString("estado"));
         String tipo = rs.getString("tipo");
 
         switch (tipo) {
-            case "CAMION":  return new Camion(id, placa, capacidad, estado);
-            case "MOTO":    return new Moto(id, placa, capacidad, estado);
-            case "FURGON":  return new Furgon(id, placa, capacidad, estado);
+            case "Camión": return new Camion(id, placa, capacidad, estado);
+            case "Moto":   return new Moto(id, placa, capacidad, estado);
+            case "Furgón": return new Furgon(id, placa, capacidad, estado);
             default: throw new SQLException("Tipo de vehiculo desconocido: " + tipo);
         }
     }
 
     /**
      * Retorna el nombre del tipo de vehículo tal como está registrado en la tabla
-     * {@code TIPO_VEHICULO}, deducido a partir de la clase concreta del objeto.
+     * {@code tipo_vehiculo}, deducido a partir de la clase concreta del objeto.
      *
      * @param vehiculo vehículo cuyo tipo se desea determinar.
-     * @return {@code "CAMION"}, {@code "MOTO"}, {@code "FURGON"} o {@code "DESCONOCIDO"}.
+     * @return {@code "Camión"}, {@code "Moto"}, {@code "Furgón"} o {@code "DESCONOCIDO"}.
      */
     private String obtenerNombreTipo(Vehiculo vehiculo) {
-        if (vehiculo instanceof Camion)  return "CAMION";
-        if (vehiculo instanceof Moto)    return "MOTO";
-        if (vehiculo instanceof Furgon)  return "FURGON";
+        if (vehiculo instanceof Camion)  return "Camión";
+        if (vehiculo instanceof Moto)    return "Moto";
+        if (vehiculo instanceof Furgon)  return "Furgón";
         return "DESCONOCIDO";
     }
 }

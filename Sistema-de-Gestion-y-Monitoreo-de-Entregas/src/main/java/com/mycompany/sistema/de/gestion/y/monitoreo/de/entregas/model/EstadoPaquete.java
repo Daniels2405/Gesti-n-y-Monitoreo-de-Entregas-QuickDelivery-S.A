@@ -25,5 +25,45 @@ public enum EstadoPaquete {
     ENTREGADO,
 
     /** Se produjo una incidencia durante el proceso de entrega del paquete. */
-    INCIDENCIA
+    INCIDENCIA;
+
+    // ----------------------------------------------------------------- mapeo BD
+
+    /**
+     * Convierte el nombre almacenado en la tabla {@code estado_paquete} al enum correspondiente.
+     *
+     * <p>La base de datos maneja estados más granulares ({@code registrado}, {@code en_bodega},
+     * {@code asignado}, {@code devuelto}) que se mapean a las constantes más amplias de este enum.</p>
+     *
+     * @param nombre valor de la columna {@code nombre} en la base de datos.
+     * @return constante del enum equivalente.
+     * @throws IllegalArgumentException si el valor no tiene equivalente conocido.
+     */
+    public static EstadoPaquete fromString(String nombre) {
+        switch (nombre.toLowerCase()) {
+            case "registrado":
+            case "en_bodega":
+            case "asignado":    return EN_ESPERA;
+            case "en_transito": return EN_TRANSITO;
+            case "entregado":
+            case "devuelto":    return ENTREGADO;
+            case "incidencia":  return INCIDENCIA;
+            default: throw new IllegalArgumentException("EstadoPaquete desconocido: " + nombre);
+        }
+    }
+
+    /**
+     * Retorna el nombre tal como está almacenado en la tabla {@code estado_paquete}.
+     *
+     * @return cadena compatible con la columna {@code nombre} de la base de datos.
+     */
+    public String toDbString() {
+        switch (this) {
+            case EN_ESPERA:   return "registrado";
+            case EN_TRANSITO: return "en_transito";
+            case ENTREGADO:   return "entregado";
+            case INCIDENCIA:  return "incidencia";
+            default:          return name().toLowerCase();
+        }
+    }
 }
