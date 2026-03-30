@@ -21,5 +21,37 @@ public enum EstadoVehiculo {
     EN_RUTA,
 
     /** El vehículo está inactivo y no puede recibir asignaciones. */
-    INACTIVO
+    INACTIVO;
+
+    // ----------------------------------------------------------------- mapeo BD
+
+    /**
+     * Convierte el nombre almacenado en la tabla {@code estado_vehiculo} al enum correspondiente.
+     *
+     * @param nombre valor de la columna {@code nombre} en la base de datos.
+     * @return constante del enum equivalente.
+     * @throws IllegalArgumentException si el valor no tiene equivalente conocido.
+     */
+    public static EstadoVehiculo fromString(String nombre) {
+        switch (nombre.toLowerCase()) {
+            case "disponible":    return DISPONIBLE;
+            case "en_ruta":       return EN_RUTA;
+            case "mantenimiento": return INACTIVO;
+            default: throw new IllegalArgumentException("EstadoVehiculo desconocido: " + nombre);
+        }
+    }
+
+    /**
+     * Retorna el nombre tal como está almacenado en la tabla {@code estado_vehiculo}.
+     *
+     * @return cadena compatible con la columna {@code nombre} de la base de datos.
+     */
+    public String toDbString() {
+        switch (this) {
+            case DISPONIBLE: return "disponible";
+            case EN_RUTA:    return "en_ruta";
+            case INACTIVO:   return "mantenimiento";
+            default:         return name().toLowerCase();
+        }
+    }
 }

@@ -13,7 +13,7 @@ import java.util.List;
  * Objeto de acceso a datos (DAO) para la entidad {@link Incidencia}.
  *
  * <p>Proporciona operaciones de lectura, inserción y eliminación sobre
- * la tabla {@code INCIDENCIA} de la base de datos, haciendo uso de
+ * la tabla {@code incidencia} de la base de datos, haciendo uso de
  * {@link ConexionDB} para obtener conexiones.</p>
  *
  * @author QuickDelivery S.A.
@@ -29,7 +29,8 @@ public class IncidenciaDAO {
      */
     public List<Incidencia> obtenerTodas() throws ConexionException, SQLException {
         List<Incidencia> lista = new ArrayList<>();
-        String sql = "SELECT id_incidencia, descripcion, fecha, id_paquete FROM INCIDENCIA";
+        String sql = "SELECT id_incid, descripcion, fecha, id_paquete, id_conductor " +
+                     "FROM incidencia";
 
         try (Connection conexion = ConexionDB.getConexion();
              Statement stm = conexion.createStatement();
@@ -52,7 +53,8 @@ public class IncidenciaDAO {
      */
     public List<Incidencia> obtenerPorPaquete(int idPaquete) throws ConexionException, SQLException {
         List<Incidencia> lista = new ArrayList<>();
-        String sql = "SELECT id_incidencia, descripcion, fecha, id_paquete FROM INCIDENCIA WHERE id_paquete = ?";
+        String sql = "SELECT id_incid, descripcion, fecha, id_paquete, id_conductor " +
+                     "FROM incidencia WHERE id_paquete = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
@@ -70,20 +72,24 @@ public class IncidenciaDAO {
     /**
      * Inserta una nueva incidencia en la base de datos.
      *
-     * @param incidencia incidencia a insertar con descripción, fecha e id de paquete definidos.
+     * <p>La columna {@code fecha} usa {@code DEFAULT CURRENT_TIMESTAMP}; no es necesario
+     * pasarla explícitamente.</p>
+     *
+     * @param incidencia incidencia a insertar con descripción, paquete y conductor definidos.
      * @return {@code true} si se insertó al menos una fila; {@code false} en caso contrario.
      * @throws ConexionException si no se puede obtener una conexión a la base de datos.
      * @throws SQLException      si ocurre un error durante la inserción SQL.
      */
     public boolean insertar(Incidencia incidencia) throws ConexionException, SQLException {
-        String sql = "INSERT INTO INCIDENCIA (descripcion, fecha, id_paquete) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO incidencia (descripcion, id_paquete, id_conductor) " +
+                     "VALUES (?, ?, ?)";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
 
             ps.setString(1, incidencia.getDescripcion());
-            ps.setTimestamp(2, Timestamp.valueOf(incidencia.getFecha()));
-            ps.setInt(3, incidencia.getIdPaquete());
+            ps.setInt(2, incidencia.getIdPaquete());
+            ps.setInt(3, incidencia.getIdConductor());
             return ps.executeUpdate() > 0;
         }
     }
@@ -97,7 +103,7 @@ public class IncidenciaDAO {
      * @throws SQLException      si ocurre un error durante la eliminación SQL.
      */
     public boolean eliminar(int id) throws ConexionException, SQLException {
-        String sql = "DELETE FROM INCIDENCIA WHERE id_incidencia = ?";
+        String sql = "DELETE FROM incidencia WHERE id_incid = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
@@ -117,10 +123,11 @@ public class IncidenciaDAO {
     private Incidencia mapearIncidencia(ResultSet rs) throws SQLException {
         LocalDateTime fecha = rs.getTimestamp("fecha").toLocalDateTime();
         return new Incidencia(
-                rs.getInt("id_incidencia"),
+                rs.getInt("id_incid"),
                 rs.getString("descripcion"),
                 fecha,
-                rs.getInt("id_paquete")
+                rs.getInt("id_paquete"),
+                rs.getInt("id_conductor")
         );
     }
 }
