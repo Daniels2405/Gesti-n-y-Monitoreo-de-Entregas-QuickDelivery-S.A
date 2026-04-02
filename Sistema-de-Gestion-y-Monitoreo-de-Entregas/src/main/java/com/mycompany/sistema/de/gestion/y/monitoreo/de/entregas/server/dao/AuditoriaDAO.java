@@ -1,8 +1,8 @@
-package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.dao;
+package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao;
 
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.TipoAccion;
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.util.ConexionDB;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.util.ConexionDB;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -14,7 +14,7 @@ import java.util.List;
  * <p>Registra en base de datos las acciones relevantes del sistema
  * (login, logout, CRUD de entidades) con el usuario responsable, el
  * tipo de acción y un detalle libre. Complementa el registro en archivo
- * que realiza {@link com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.util.Logger}.</p>
+ * que realiza {@link com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.util.Logger}.</p>
  *
  * @author QuickDelivery S.A.
  */

@@ -1,13 +1,13 @@
-package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.controller;
+package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.controller;
 
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.dao.AuditoriaDAO;
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.dao.UsuarioDAO;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.AuditoriaDAO;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.UsuarioDAO;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ValidacionException;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.TipoAccion;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Usuario;
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.util.ConexionDB;
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.util.Logger;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.util.ConexionDB;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.util.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -28,7 +28,6 @@ import java.sql.*;
  * @author QuickDelivery S.A.
  */
 public class AuthController {
-
     /** DAO para consultar y verificar usuarios en la base de datos. */
     private final UsuarioDAO usuarioDAO = new UsuarioDAO();
 
@@ -157,4 +156,5 @@ public class AuthController {
         }
         return -1;
     }
+    
 }

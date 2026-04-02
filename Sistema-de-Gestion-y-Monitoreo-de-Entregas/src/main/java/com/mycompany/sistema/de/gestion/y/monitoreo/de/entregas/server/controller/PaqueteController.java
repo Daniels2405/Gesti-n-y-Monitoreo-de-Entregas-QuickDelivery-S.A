@@ -1,6 +1,6 @@
-package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.controller;
+package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.controller;
 
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.dao.PaqueteDAO;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.PaqueteDAO;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.EstadoPaquete;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Paquete;

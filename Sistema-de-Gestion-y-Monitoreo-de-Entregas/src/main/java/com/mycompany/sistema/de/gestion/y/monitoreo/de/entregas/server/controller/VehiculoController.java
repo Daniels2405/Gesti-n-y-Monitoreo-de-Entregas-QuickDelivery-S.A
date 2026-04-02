@@ -1,6 +1,6 @@
-package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.controller;
+package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.controller;
 
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.dao.VehiculoDAO;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.VehiculoDAO;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Vehiculo;
 
