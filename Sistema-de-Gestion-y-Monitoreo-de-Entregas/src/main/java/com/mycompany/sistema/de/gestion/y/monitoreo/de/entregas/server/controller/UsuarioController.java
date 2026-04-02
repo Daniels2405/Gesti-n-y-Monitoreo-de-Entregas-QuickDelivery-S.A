@@ -1,11 +1,11 @@
-package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.controller;
+package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.controller;
 
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.dao.AuditoriaDAO;
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.dao.UsuarioDAO;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.AuditoriaDAO;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.UsuarioDAO;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.TipoAccion;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Usuario;
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.util.Logger;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.util.Logger;
 
 import java.sql.SQLException;
 import java.util.List;

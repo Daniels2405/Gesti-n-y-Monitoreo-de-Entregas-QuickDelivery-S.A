@@ -1,9 +1,9 @@
-package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.dao;
+package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao;
 
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.EstadoPaquete;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Paquete;
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.util.ConexionDB;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.util.ConexionDB;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class PaqueteDAO {
     public List<Paquete> obtenerTodos() throws ConexionException, SQLException {
         List<Paquete> lista = new ArrayList<>();
         String sql = "SELECT p.id_paquete, p.codigo, p.descripcion, p.peso, ep.nombre AS estado " +
-                     "FROM paquete p" +
+                     "FROM paquete p " +
                      "JOIN estado_paquete ep ON p.id_estado = ep.id_estado";
 
         try (Connection conexion = ConexionDB.getConexion();
@@ -54,7 +54,7 @@ public class PaqueteDAO {
      */
     public Paquete obtenerPorId(int id) throws ConexionException, SQLException {
         String sql = "SELECT p.id_paquete, p.codigo, p.descripcion, p.peso, ep.nombre AS estado " +
-                     "FROM paquete p" +
+                     "FROM paquete p " +
                      "JOIN estado_paquete ep ON p.id_estado = ep.id_estado " +
                      "WHERE p.id_paquete = ?";
 
@@ -82,7 +82,7 @@ public class PaqueteDAO {
     public List<Paquete> obtenerPorEstado(EstadoPaquete estado) throws ConexionException, SQLException {
         List<Paquete> lista = new ArrayList<>();
         String sql = "SELECT p.id_paquete, p.codigo, p.descripcion, p.peso, ep.nombre AS estado " +
-                     "FROM paquete p" +
+                     "FROM paquete p " +
                      "JOIN estado_paquete ep ON p.id_estado = ep.id_estado " +
                      "WHERE ep.nombre = ?";
 

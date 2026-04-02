@@ -1,6 +1,6 @@
 package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server;
 
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.util.Logger;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.util.Logger;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -8,8 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Servidor concurrente de QuickDelivery.
- * Acepta conexiones de conductores, asigna un hilo por conductor
- * y mantiene un mapa de conductores activos.
+ * Acepta conexiones de cualquier cliente (admin, despachador, conductor),
+ * asigna un hilo por cliente y mantiene un conjunto de clientes activos.
  *
  * <p>Basado en el mismo patrón de SaladeChat del curso.
  * Protocolo de mensajes definido en {@link ClientHandler}.
@@ -18,18 +18,18 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ServidorQuickDelivery {
 
-    private static final int MAX_CONDUCTORES = 30;
+    private static final int MAX_CLIENTES = 30;
 
     /**
-     * Mapa de conductores activos: clave = ID del conductor, valor = su handler.
-     * ConcurrentHashMap garantiza acceso seguro desde múltiples hilos.
+     * Conjunto de todos los clientes activos conectados al servidor.
+     * ConcurrentHashMap.newKeySet() garantiza acceso seguro desde múltiples hilos.
      */
-    private static final ConcurrentHashMap<Integer, ClientHandler> conductoresActivos
-            = new ConcurrentHashMap<>();
+    private static final Set<ClientHandler> clientes =
+            ConcurrentHashMap.newKeySet();
 
     /**
      * Punto de entrada del servidor. Lee el puerto desde config.properties
-     * y entra en loop aceptando conexiones de conductores.
+     * y entra en loop aceptando conexiones de clientes.
      *
      * @param args argumentos de línea de comandos (no utilizados)
      */
@@ -40,18 +40,19 @@ public class ServidorQuickDelivery {
 
         try (ServerSocket serverSocket = new ServerSocket(puerto)) {
             while (true) {
-                Socket conexionConductor = serverSocket.accept();
-                if (conductoresActivos.size() < MAX_CONDUCTORES) {
-                    ClientHandler handler = new ClientHandler(conexionConductor);
+                Socket socketCliente = serverSocket.accept();
+                if (clientes.size() < MAX_CLIENTES) {
+                    ClientHandler handler = new ClientHandler(socketCliente);
+                    clientes.add(handler);          // agregar antes de iniciar el hilo
                     new Thread(handler).start();
                 } else {
-                    System.out.println("Máximo de conductores alcanzado. Rechazando conexión.");
-                    try (PrintWriter tempOut = new PrintWriter(conexionConductor.getOutputStream(), true)) {
+                    System.out.println("Máximo de clientes alcanzado. Rechazando conexión.");
+                    try (PrintWriter tempOut = new PrintWriter(socketCliente.getOutputStream(), true)) {
                         tempOut.println("ERROR|Servidor lleno, intente más tarde");
                     } catch (IOException e) {
                         System.out.println("Error al rechazar conexión: " + e.getMessage());
                     }
-                    conexionConductor.close();
+                    socketCliente.close();
                 }
             }
         } catch (IOException e) {
@@ -61,54 +62,32 @@ public class ServidorQuickDelivery {
     }
 
     /**
-     * Registra un conductor en el mapa de conductores activos.
+     * Elimina un cliente del conjunto al desconectarse.
      *
-     * @param idConductor ID único del conductor
-     * @param handler     hilo que maneja su conexión
+     * @param handler handler del cliente que se desconectó
      */
-    public static void agregarConductor(int idConductor, ClientHandler handler) {
-        conductoresActivos.put(idConductor, handler);
-        System.out.println("Conductor #" + idConductor + " conectado. Activos: " + conductoresActivos.size());
-        Logger.registrar("LOGIN", "Conductor#" + idConductor, "Conectado al servidor");
+    public static void removerCliente(ClientHandler handler) {
+        clientes.remove(handler);
+        System.out.println("Cliente desconectado. Activos: " + clientes.size());
     }
 
     /**
-     * Elimina un conductor del mapa al desconectarse.
-     *
-     * @param idConductor ID del conductor que se desconectó
-     */
-    public static void removerConductor(int idConductor) {
-        conductoresActivos.remove(idConductor);
-        System.out.println("Conductor #" + idConductor + " desconectado. Activos: " + conductoresActivos.size());
-        Logger.registrar("DESCONEXION", "Conductor#" + idConductor, "Desconectado del servidor");
-    }
-
-    /**
-     * Envía un mensaje a todos los conductores conectados.
-     * Útil para notificaciones generales del sistema.
+     * Envía un mensaje a todos los clientes conectados.
      *
      * @param mensaje texto a enviar
      */
     public static void broadcast(String mensaje) {
-        for (ClientHandler handler : conductoresActivos.values()) {
-            handler.sendMessage(mensaje);
+        for (ClientHandler handler : clientes) {
+            handler.enviar(mensaje);
         }
-    }
-
-    /**
-     * Retorna el mapa de conductores activos (para el monitor del despachador).
-     *
-     * @return mapa de conductores activos, clave = ID conductor
-     */
-    public static Map<Integer, ClientHandler> getConductoresActivos() {
-        return conductoresActivos;
     }
 
     /**
      * Lee el puerto desde config.properties. Si falla, usa 5000 por defecto.
      */
     private static int leerPuerto() {
-        try (InputStream input = ServidorQuickDelivery.class.getClassLoader().getResourceAsStream("config.properties")) {
+        try (InputStream input = ServidorQuickDelivery.class.getClassLoader()
+                .getResourceAsStream("config.properties")) {
             Properties props = new Properties();
             props.load(input);
             return Integer.parseInt(props.getProperty("server.port", "5000"));

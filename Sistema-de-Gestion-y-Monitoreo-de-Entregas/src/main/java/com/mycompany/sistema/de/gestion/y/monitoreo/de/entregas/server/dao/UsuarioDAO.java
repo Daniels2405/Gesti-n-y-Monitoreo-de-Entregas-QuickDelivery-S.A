@@ -1,9 +1,9 @@
-package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.dao;
+package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao;
 
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Rol;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Usuario;
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.util.ConexionDB;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.util.ConexionDB;
 
 import java.sql.*;
 import java.util.ArrayList;

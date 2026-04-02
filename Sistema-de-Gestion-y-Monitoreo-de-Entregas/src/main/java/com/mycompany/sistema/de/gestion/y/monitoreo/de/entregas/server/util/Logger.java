@@ -1,4 +1,4 @@
-package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.util;
+package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.util;
 
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
 import java.io.*;

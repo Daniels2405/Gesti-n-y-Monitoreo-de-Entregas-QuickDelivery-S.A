@@ -113,12 +113,13 @@ CREATE TABLE estado_paquete (
 -- -----------------TABLA 13: PAQUETE-------------------
 CREATE TABLE paquete (
     id_paquete    INT            AUTO_INCREMENT PRIMARY KEY,
+    codigo        VARCHAR(50)    NOT NULL DEFAULT '',  -- código de seguimiento (HU-04)
     descripcion   TEXT           NOT NULL,
     peso          DECIMAL(10,2)  NOT NULL,   -- peso en kg; requerido para asignacion (HU-05)
     fecha_reg     TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
-    id_cliente    INT            NOT NULL,
-    id_dir        INT            NOT NULL,
-    id_prio       INT            NOT NULL,
+    id_cliente    INT,           -- opcional; puede registrarse sin cliente asignado
+    id_dir        INT,           -- opcional; puede registrarse sin dirección asignada
+    id_prio       INT,           -- opcional; puede registrarse sin prioridad asignada
     id_estado     INT            NOT NULL,
     id_despachador INT,
     FOREIGN KEY (id_cliente)     REFERENCES cliente(id_cliente),
@@ -166,12 +167,11 @@ INSERT INTO tipo_vehiculo (nombre) VALUES
 ('Camión'),
 ('Furgón');
 
--- Estados de vehículo
+-- Estados de vehículo  (alineado con EstadoVehiculo.java: DISPONIBLE, EN_RUTA, INACTIVO→mantenimiento)
 INSERT INTO estado_vehiculo (nombre) VALUES
 ('disponible'),
 ('en_ruta'),
-('mantenimiento'),
-('fuera_servicio');
+('mantenimiento');
 
 -- Prioridades de paquete
 INSERT INTO prioridad (nombre) VALUES
@@ -203,6 +203,7 @@ INSERT INTO usuario (nombre, username, pass_hash, estado, id_rol) VALUES
 CREATE VIEW vista_paquetes AS
 SELECT
     p.id_paquete,
+    p.codigo,
     p.descripcion,
     p.peso,
     c.nombre                              AS cliente,
@@ -213,9 +214,9 @@ SELECT
     p.fecha_reg,
     u.nombre                              AS despachador
 FROM paquete p
-JOIN cliente        c  ON p.id_cliente     = c.id_cliente
-JOIN direccion      d  ON p.id_dir         = d.id_dir
-JOIN prioridad      pr ON p.id_prio        = pr.id_prio
+LEFT JOIN cliente        c  ON p.id_cliente     = c.id_cliente
+LEFT JOIN direccion      d  ON p.id_dir         = d.id_dir
+LEFT JOIN prioridad      pr ON p.id_prio        = pr.id_prio
 JOIN estado_paquete ep ON p.id_estado      = ep.id_estado
 LEFT JOIN usuario   u  ON p.id_despachador = u.id_usuario;
 
@@ -238,6 +239,7 @@ CREATE VIEW vista_asignaciones_activas AS
 SELECT
     a.id_asig,
     p.id_paquete,
+    p.codigo,
     p.descripcion                         AS paquete,
     p.peso,
     v.placa,
@@ -251,8 +253,8 @@ FROM asignacion a
 JOIN paquete        p  ON a.id_paquete    = p.id_paquete
 JOIN vehiculo       v  ON a.id_vehiculo   = v.id_vehiculo
 LEFT JOIN usuario   u  ON v.id_conductor  = u.id_usuario
-JOIN cliente        c  ON p.id_cliente    = c.id_cliente
-JOIN direccion      d  ON p.id_dir        = d.id_dir
+LEFT JOIN cliente   c  ON p.id_cliente    = c.id_cliente
+LEFT JOIN direccion d  ON p.id_dir        = d.id_dir
 WHERE a.estado IN ('pendiente', 'en_ruta');
 
 -- =====================================================================

@@ -1,4 +1,4 @@
-package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.dao;
+package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao;
 
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Camion;
@@ -6,7 +6,7 @@ import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.EstadoVehi
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Furgon;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Moto;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Vehiculo;
-import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.util.ConexionDB;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.util.ConexionDB;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -72,6 +72,36 @@ public class VehiculoDAO {
 
             while (rs.next()) {
                 lista.add(mapearVehiculo(rs));
+            }
+        }
+        return lista;
+    }
+
+    /**
+     * Retorna la lista de vehículos filtrados por un estado específico.
+     *
+     * @param estado estado por el que se filtra.
+     * @return lista de vehículos con ese estado; vacía si no hay coincidencias.
+     * @throws ConexionException si no se puede obtener una conexión a la base de datos.
+     * @throws SQLException      si ocurre un error durante la consulta SQL.
+     */
+    public List<Vehiculo> obtenerPorEstado(EstadoVehiculo estado) throws ConexionException, SQLException {
+        List<Vehiculo> lista = new ArrayList<>();
+        String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad, " +
+                     "tv.nombre AS tipo, ev.nombre AS estado " +
+                     "FROM vehiculo v " +
+                     "JOIN tipo_vehiculo tv ON v.id_tipo   = tv.id_tipo " +
+                     "JOIN estado_vehiculo ev ON v.id_estado = ev.id_estado " +
+                     "WHERE ev.nombre = ?";
+
+        try (Connection conexion = ConexionDB.getConexion();
+             PreparedStatement ps = conexion.prepareStatement(sql)) {
+
+            ps.setString(1, estado.toDbString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(mapearVehiculo(rs));
+                }
             }
         }
         return lista;
