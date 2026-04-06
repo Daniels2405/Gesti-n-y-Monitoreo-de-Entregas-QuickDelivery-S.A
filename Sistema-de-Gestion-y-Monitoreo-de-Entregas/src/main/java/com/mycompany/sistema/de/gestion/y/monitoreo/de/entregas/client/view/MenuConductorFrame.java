@@ -417,22 +417,41 @@ public class MenuConductorFrame extends JFrame {
             ConexionServidor cs = ConexionServidor.getInstancia();
             if (!cs.isConectado()) cs.conectar();
 
-            // Paquetes en tránsito (mis paquetes)
+            // Vehículo asignado al conductor
+            String respV = cs.enviarYEsperar("GET_MI_VEHICULO");
+            if (respV != null && respV.startsWith("DATA|")) {
+                String[] partes = respV.split("\\|");
+                if (partes.length >= 6 && !"NINGUNO".equals(partes[1])) {
+                    // DATA|id|placa|tipo|capacidad|estado
+                    String placa = partes[2];
+                    String tipoRaw = partes[3]; // "Camion", "Moto", "Furgon"
+                    String tipoDisplay = tipoRaw.equals("Camion") ? "Camión"
+                            : tipoRaw.equals("Furgon") ? "Furgón" : tipoRaw;
+                    String estadoDisplay = partes[5].replace("_", " ");
+                    lblPlaca.setText(placa);
+                    lblEstadoVehiculo.setText("  |  " + estadoDisplay);
+                    lblVehiculoAsignado.setText("Vehículo asignado: " + placa + "  ·  " + tipoDisplay);
+                } else {
+                    lblPlaca.setText("Sin vehículo");
+                    lblEstadoVehiculo.setText("");
+                    lblVehiculoAsignado.setText("Vehículo asignado: —");
+                }
+            }
+
+            // Paquetes en tránsito del conductor
             String respT = cs.enviarYEsperar("GET_MIS_PAQUETES|" + usuarioActual.getId());
             String respE = cs.enviarYEsperar("GET_PAQUETES_ESTADO|ENTREGADO");
             String respI = cs.enviarYEsperar("GET_PAQUETES_ESTADO|INCIDENCIA");
 
-            int entregados  = contarFilas(respE, "PAQUETES");
-            int incidencias = contarFilas(respI, "PAQUETES");
-
-            lblPaquetesEntregados.setText(String.valueOf(entregados));
-            lblIncidenciasActivas.setText(String.valueOf(incidencias));
+            lblPaquetesEntregados.setText(String.valueOf(contarFilas(respE, "PAQUETES")));
+            lblIncidenciasActivas.setText(String.valueOf(contarFilas(respI, "PAQUETES")));
 
             // LIST|PAQUETES|id|codigo|descripcion|peso|estado~...
             if (respT != null && respT.startsWith("LIST|PAQUETES")) {
                 String[] partes = respT.split("\\|", 3);
                 if (partes.length == 3 && !partes[2].isEmpty()) {
                     for (String fila : partes[2].split("~")) {
+                        if (fila.startsWith("|")) fila = fila.substring(1);
                         String[] c = fila.split("\\|");
                         if (c.length < 5) continue;
                         listaPaquetes.add(c);

@@ -58,6 +58,18 @@ public class PaqueteController {
     }
 
     /**
+     * Retorna los paquetes EN_TRANSITO asignados al vehículo de un conductor.
+     *
+     * @param idConductor identificador del conductor.
+     * @return lista de {@link Paquete} en tránsito del conductor; vacía si no hay ninguno.
+     * @throws ConexionException si no se puede obtener una conexión a la base de datos.
+     * @throws SQLException      si ocurre un error durante la consulta SQL.
+     */
+    public List<Paquete> obtenerPorConductor(int idConductor) throws ConexionException, SQLException {
+        return paqueteDAO.obtenerPorConductor(idConductor);
+    }
+
+    /**
      * Registra un nuevo paquete en el sistema.
      *
      * @param paquete paquete a registrar con todos sus campos obligatorios definidos.

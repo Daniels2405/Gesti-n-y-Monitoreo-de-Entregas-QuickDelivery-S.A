@@ -42,6 +42,17 @@ public class UsuarioController {
     }
 
     /**
+     * Retorna la lista de todos los usuarios con rol conductor activos.
+     *
+     * @return lista de {@link Usuario} conductores activos; vacía si no hay registros.
+     * @throws ConexionException si no se puede obtener una conexión a la base de datos.
+     * @throws SQLException      si ocurre un error durante la consulta SQL.
+     */
+    public List<Usuario> obtenerConductores() throws ConexionException, SQLException {
+        return usuarioDAO.obtenerConductores();
+    }
+
+    /**
      * Busca y retorna un usuario por su identificador único.
      *
      * @param id identificador del usuario a buscar.

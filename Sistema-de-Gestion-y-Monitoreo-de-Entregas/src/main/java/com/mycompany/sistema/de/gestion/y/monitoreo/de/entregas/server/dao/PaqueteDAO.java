@@ -72,6 +72,36 @@ public class PaqueteDAO {
     }
 
     /**
+     * Retorna los paquetes EN_TRANSITO asignados al vehículo de un conductor específico.
+     *
+     * @param idConductor identificador del conductor.
+     * @return lista de {@link Paquete} en tránsito del conductor; vacía si no hay ninguno.
+     * @throws ConexionException si no se puede obtener una conexión a la base de datos.
+     * @throws SQLException      si ocurre un error durante la consulta SQL.
+     */
+    public List<Paquete> obtenerPorConductor(int idConductor) throws ConexionException, SQLException {
+        List<Paquete> lista = new ArrayList<>();
+        String sql = "SELECT DISTINCT p.id_paquete, p.codigo, p.descripcion, p.peso, ep.nombre AS estado " +
+                     "FROM paquete p " +
+                     "JOIN estado_paquete ep ON p.id_estado = ep.id_estado " +
+                     "JOIN asignacion a ON a.id_paquete = p.id_paquete " +
+                     "JOIN vehiculo v ON v.id_vehiculo = a.id_vehiculo " +
+                     "WHERE v.id_conductor = ? AND ep.nombre = 'en_transito'";
+
+        try (Connection conexion = ConexionDB.getConexion();
+             PreparedStatement ps = conexion.prepareStatement(sql)) {
+
+            ps.setInt(1, idConductor);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(mapearPaquete(rs));
+                }
+            }
+        }
+        return lista;
+    }
+
+    /**
      * Retorna la lista de paquetes que se encuentran en el estado indicado.
      *
      * @param estado estado por el que se filtrarán los paquetes.

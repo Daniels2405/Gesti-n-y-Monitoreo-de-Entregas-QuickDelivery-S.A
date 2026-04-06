@@ -150,6 +150,7 @@ public class ClientHandler implements Runnable {
             // ── VEHÍCULOS ─────────────────────────────────────────────────────
             case "GET_VEHICULOS":            manejarGetVehiculos();             break;
             case "GET_VEHICULOS_DISPONIBLES": manejarGetVehiculosDisponibles(); break;
+            case "GET_CONDUCTORES":          manejarGetConductores();           break;
             case "CREATE_VEHICULO":          manejarCreateVehiculo(p);          break;
             case "UPDATE_VEHICULO":          manejarUpdateVehiculo(p);          break;
             case "DELETE_VEHICULO":          manejarDeleteVehiculo(p);          break;
@@ -168,6 +169,7 @@ public class ClientHandler implements Runnable {
             case "GET_AUDITORIA":        manejarGetAuditoria();        break;
             // ── CONDUCTOR ─────────────────────────────────────────────────────
             case "LOGIN_CONDUCTOR":      manejarLoginConductor(p);     break;
+            case "GET_MI_VEHICULO":      manejarGetMiVehiculo();       break;
             case "GET_MIS_PAQUETES":     manejarGetMisPaquetes();      break;
             case "UBICACION":            manejarUbicacion(p);          break;
             case "ESTADO":               manejarEstado(p);             break;
@@ -296,6 +298,25 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    /**
+     * GET_CONDUCTORES — lista todos los conductores activos.
+     * Formato: LIST|CONDUCTORES|id|nombre~...
+     */
+    private void manejarGetConductores() {
+        try {
+            List<Usuario> conductores = usuarioCtrl.obtenerConductores();
+            StringBuilder sb = new StringBuilder("LIST|CONDUCTORES");
+            for (Usuario u : conductores) {
+                sb.append("|").append(u.getId())
+                  .append("|").append(u.getNombre())
+                  .append("~");
+            }
+            enviar(quitarUltimaTilde(sb.toString()));
+        } catch (Exception e) {
+            enviar("ERROR|" + e.getMessage());
+        }
+    }
+
     /** GET_VEHICULOS_DISPONIBLES */
     private void manejarGetVehiculosDisponibles() {
         try {
@@ -305,15 +326,16 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /** CREATE_VEHICULO|placa|tipo|capacidadMaxima|estado */
+    /** CREATE_VEHICULO|placa|tipo|capacidadMaxima|estado|idConductor */
     private void manejarCreateVehiculo(String[] p) {
         if (usuarioActual.getRol() == Rol.CONDUCTOR) { enviar("FORBIDDEN|Sin permisos"); return; }
-        if (p.length < 5) { enviar("ERROR|Formato: CREATE_VEHICULO|placa|tipo|capacidad|estado"); return; }
+        if (p.length < 6) { enviar("ERROR|Formato: CREATE_VEHICULO|placa|tipo|capacidad|estado|idConductor"); return; }
         try {
             Vehiculo v = crearInstanciaVehiculo(p[2]);
             v.setPlaca(p[1]);
             v.setCapacidadMaxima(Double.parseDouble(p[3]));
             v.setEstado(EstadoVehiculo.fromString(p[4]));
+            v.setIdConductor(Integer.parseInt(p[5]));
             vehiculoCtrl.registrar(v);
             enviar("OK|Vehículo registrado");
         } catch (Exception e) {
@@ -321,16 +343,17 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    /** UPDATE_VEHICULO|id|placa|tipo|capacidadMaxima|estado */
+    /** UPDATE_VEHICULO|id|placa|tipo|capacidadMaxima|estado|idConductor */
     private void manejarUpdateVehiculo(String[] p) {
         if (usuarioActual.getRol() == Rol.CONDUCTOR) { enviar("FORBIDDEN|Sin permisos"); return; }
-        if (p.length < 6) { enviar("ERROR|Formato: UPDATE_VEHICULO|id|placa|tipo|capacidad|estado"); return; }
+        if (p.length < 7) { enviar("ERROR|Formato: UPDATE_VEHICULO|id|placa|tipo|capacidad|estado|idConductor"); return; }
         try {
             Vehiculo v = vehiculoCtrl.obtenerPorId(Integer.parseInt(p[1]));
             if (v == null) { enviar("ERROR|Vehículo no encontrado"); return; }
             v.setPlaca(p[2]);
             v.setCapacidadMaxima(Double.parseDouble(p[4]));
             v.setEstado(EstadoVehiculo.fromString(p[5]));
+            v.setIdConductor(Integer.parseInt(p[6]));
             vehiculoCtrl.actualizar(v);
             enviar("OK|Vehículo actualizado");
         } catch (Exception e) {
@@ -547,14 +570,35 @@ public class ClientHandler implements Runnable {
     }
 
     /**
+     * GET_MI_VEHICULO
+     * Retorna el vehículo asignado al conductor autenticado.
+     * Formato exitoso: DATA|id|placa|tipo|capacidad|estado
+     * Sin vehículo:    DATA|NINGUNO
+     */
+    private void manejarGetMiVehiculo() {
+        try {
+            Vehiculo v = vehiculoCtrl.obtenerPorConductor(usuarioActual.getId());
+            if (v == null) {
+                enviar("DATA|NINGUNO");
+            } else {
+                enviar("DATA|" + v.getId()
+                        + "|" + v.getPlaca()
+                        + "|" + v.getClass().getSimpleName()
+                        + "|" + v.calcularCapacidad()
+                        + "|" + v.getEstado());
+            }
+        } catch (Exception e) {
+            enviar("ERROR|" + e.getMessage());
+        }
+    }
+
+    /**
      * GET_MIS_PAQUETES|idConductor
-     * Retorna los paquetes EN_TRANSITO asignados al conductor.
-     * La asignación en BD relaciona paquete con vehículo; se retornan
-     * todos los paquetes EN_TRANSITO como proxy del conductor activo.
+     * Retorna solo los paquetes EN_TRANSITO asignados al vehículo del conductor autenticado.
      */
     private void manejarGetMisPaquetes() {
         try {
-            List<Paquete> lista = paqueteCtrl.obtenerPorEstado(EstadoPaquete.EN_TRANSITO);
+            List<Paquete> lista = paqueteCtrl.obtenerPorConductor(usuarioActual.getId());
             enviar(construirListaPaquetes(lista));
         } catch (Exception e) {
             enviar("ERROR|" + e.getMessage());
@@ -709,7 +753,7 @@ public class ClientHandler implements Runnable {
 
     /**
      * Construye la respuesta LIST para una lista de vehículos.
-     * Formato: LIST|VEHICULOS|id|placa|tipo|capacidad|estado~...
+     * Formato: LIST|VEHICULOS|id|placa|tipo|capacidad|estado|idConductor~...
      */
     private String construirListaVehiculos(List<Vehiculo> lista) {
         StringBuilder sb = new StringBuilder("LIST|VEHICULOS");
@@ -719,6 +763,7 @@ public class ClientHandler implements Runnable {
               .append("|").append(v.getClass().getSimpleName())
               .append("|").append(v.calcularCapacidad())
               .append("|").append(v.getEstado())
+              .append("|").append(v.getIdConductor())
               .append("~");
         }
         return quitarUltimaTilde(sb.toString());

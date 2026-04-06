@@ -34,7 +34,7 @@ public class VehiculoDAO {
     public List<Vehiculo> obtenerTodos() throws ConexionException, SQLException {
         List<Vehiculo> lista = new ArrayList<>();
         String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad, " +
-                     "tv.nombre AS tipo, ev.nombre AS estado " +
+                     "tv.nombre AS tipo, ev.nombre AS estado, v.id_conductor " +
                      "FROM vehiculo v " +
                      "JOIN tipo_vehiculo tv ON v.id_tipo   = tv.id_tipo " +
                      "JOIN estado_vehiculo ev ON v.id_estado = ev.id_estado";
@@ -60,7 +60,7 @@ public class VehiculoDAO {
     public List<Vehiculo> obtenerDisponibles() throws ConexionException, SQLException {
         List<Vehiculo> lista = new ArrayList<>();
         String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad, " +
-                     "tv.nombre AS tipo, ev.nombre AS estado " +
+                     "tv.nombre AS tipo, ev.nombre AS estado, v.id_conductor " +
                      "FROM vehiculo v " +
                      "JOIN tipo_vehiculo tv ON v.id_tipo   = tv.id_tipo " +
                      "JOIN estado_vehiculo ev ON v.id_estado = ev.id_estado " +
@@ -88,7 +88,7 @@ public class VehiculoDAO {
     public List<Vehiculo> obtenerPorEstado(EstadoVehiculo estado) throws ConexionException, SQLException {
         List<Vehiculo> lista = new ArrayList<>();
         String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad, " +
-                     "tv.nombre AS tipo, ev.nombre AS estado " +
+                     "tv.nombre AS tipo, ev.nombre AS estado, v.id_conductor " +
                      "FROM vehiculo v " +
                      "JOIN tipo_vehiculo tv ON v.id_tipo   = tv.id_tipo " +
                      "JOIN estado_vehiculo ev ON v.id_estado = ev.id_estado " +
@@ -117,7 +117,7 @@ public class VehiculoDAO {
      */
     public Vehiculo obtenerPorId(int id) throws ConexionException, SQLException {
         String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad, " +
-                     "tv.nombre AS tipo, ev.nombre AS estado " +
+                     "tv.nombre AS tipo, ev.nombre AS estado, v.id_conductor " +
                      "FROM vehiculo v " +
                      "JOIN tipo_vehiculo tv ON v.id_tipo   = tv.id_tipo " +
                      "JOIN estado_vehiculo ev ON v.id_estado = ev.id_estado " +
@@ -137,6 +137,33 @@ public class VehiculoDAO {
     }
 
     /**
+     * Busca y retorna el vehículo asignado a un conductor específico.
+     *
+     * @param idConductor identificador del conductor.
+     * @return el {@link Vehiculo} asignado, o {@code null} si no tiene vehículo.
+     * @throws ConexionException si no se puede obtener una conexión a la base de datos.
+     * @throws SQLException      si ocurre un error durante la consulta SQL.
+     */
+    public Vehiculo obtenerPorConductor(int idConductor) throws ConexionException, SQLException {
+        String sql = "SELECT v.id_vehiculo, v.placa, v.capacidad, " +
+                     "tv.nombre AS tipo, ev.nombre AS estado, v.id_conductor " +
+                     "FROM vehiculo v " +
+                     "JOIN tipo_vehiculo tv ON v.id_tipo   = tv.id_tipo " +
+                     "JOIN estado_vehiculo ev ON v.id_estado = ev.id_estado " +
+                     "WHERE v.id_conductor = ?";
+
+        try (Connection conexion = ConexionDB.getConexion();
+             PreparedStatement ps = conexion.prepareStatement(sql)) {
+
+            ps.setInt(1, idConductor);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return mapearVehiculo(rs);
+            }
+        }
+        return null;
+    }
+
+    /**
      * Inserta un nuevo vehículo en la base de datos.
      *
      * @param vehiculo vehículo a insertar; su tipo concreto determina el {@code tipo_vehiculo}.
@@ -145,10 +172,11 @@ public class VehiculoDAO {
      * @throws SQLException      si ocurre un error durante la inserción SQL.
      */
     public boolean insertar(Vehiculo vehiculo) throws ConexionException, SQLException {
-        String sql = "INSERT INTO vehiculo (placa, capacidad, id_tipo, id_estado) " +
+        String sql = "INSERT INTO vehiculo (placa, capacidad, id_tipo, id_estado, id_conductor) " +
                      "VALUES (?, ?, " +
                      "(SELECT id_tipo  FROM tipo_vehiculo   WHERE nombre = ?), " +
-                     "(SELECT id_estado FROM estado_vehiculo WHERE nombre = ?))";
+                     "(SELECT id_estado FROM estado_vehiculo WHERE nombre = ?), " +
+                     "?)";
 
         try (Connection conexion = ConexionDB.getConexion();
              PreparedStatement ps = conexion.prepareStatement(sql)) {
@@ -157,6 +185,11 @@ public class VehiculoDAO {
             ps.setDouble(2, vehiculo.getCapacidadMaxima());
             ps.setString(3, obtenerNombreTipo(vehiculo));
             ps.setString(4, vehiculo.getEstado().toDbString());
+            if (vehiculo.getIdConductor() > 0) {
+                ps.setInt(5, vehiculo.getIdConductor());
+            } else {
+                ps.setNull(5, java.sql.Types.INTEGER);
+            }
             return ps.executeUpdate() > 0;
         }
     }
@@ -171,7 +204,8 @@ public class VehiculoDAO {
      */
     public boolean actualizar(Vehiculo vehiculo) throws ConexionException, SQLException {
         String sql = "UPDATE vehiculo SET placa = ?, capacidad = ?, " +
-                     "id_estado = (SELECT id_estado FROM estado_vehiculo WHERE nombre = ?) " +
+                     "id_estado = (SELECT id_estado FROM estado_vehiculo WHERE nombre = ?), " +
+                     "id_conductor = ? " +
                      "WHERE id_vehiculo = ?";
 
         try (Connection conexion = ConexionDB.getConexion();
@@ -180,7 +214,12 @@ public class VehiculoDAO {
             ps.setString(1, vehiculo.getPlaca());
             ps.setDouble(2, vehiculo.getCapacidadMaxima());
             ps.setString(3, vehiculo.getEstado().toDbString());
-            ps.setInt(4, vehiculo.getId());
+            if (vehiculo.getIdConductor() > 0) {
+                ps.setInt(4, vehiculo.getIdConductor());
+            } else {
+                ps.setNull(4, java.sql.Types.INTEGER);
+            }
+            ps.setInt(5, vehiculo.getId());
             return ps.executeUpdate() > 0;
         }
     }
@@ -218,13 +257,17 @@ public class VehiculoDAO {
         double capacidad = rs.getDouble("capacidad");
         EstadoVehiculo estado = EstadoVehiculo.fromString(rs.getString("estado"));
         String tipo = rs.getString("tipo");
+        int idConductor = rs.getInt("id_conductor"); // retorna 0 si es NULL
 
+        Vehiculo v;
         switch (tipo) {
-            case "Camión": return new Camion(id, placa, capacidad, estado);
-            case "Moto":   return new Moto(id, placa, capacidad, estado);
-            case "Furgón": return new Furgon(id, placa, capacidad, estado);
+            case "Camión": v = new Camion(id, placa, capacidad, estado); break;
+            case "Moto":   v = new Moto(id, placa, capacidad, estado);   break;
+            case "Furgón": v = new Furgon(id, placa, capacidad, estado); break;
             default: throw new SQLException("Tipo de vehiculo desconocido: " + tipo);
         }
+        v.setIdConductor(idConductor);
+        return v;
     }
 
     /**

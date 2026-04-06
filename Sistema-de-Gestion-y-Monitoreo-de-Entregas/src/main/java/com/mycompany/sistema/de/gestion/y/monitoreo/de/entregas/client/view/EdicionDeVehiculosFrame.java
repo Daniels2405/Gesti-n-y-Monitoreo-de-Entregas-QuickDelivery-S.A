@@ -16,6 +16,8 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -52,10 +54,13 @@ public class EdicionDeVehiculosFrame extends JFrame {
 
     private JLabel lblPlacaTitulo;
     private JComboBox<String> cmbTipoVehiculo;
-    private JTextField txtConductor;
+    private JComboBox<String> cmbConductor;
     private JTextField txtCapacidad;
     private JComboBox<String> cmbEstado;
     private JTextField txtPlaca;
+
+    /** IDs de conductores paralelos a los ítems de cmbConductor; índice 0 = sin conductor (id=0). */
+    private final List<Integer> conductorIds = new ArrayList<>();
 
     private JButton btnCambiarPlaca;
     private JButton btnGuardar;
@@ -98,6 +103,8 @@ public class EdicionDeVehiculosFrame extends JFrame {
         setSize(1280, 760);
         setMinimumSize(new Dimension(1100, 700));
         setLocationRelativeTo(null);
+
+        cargarConductores();
 
         if (vehiculoEditar != null) {
             cargarDatosVehiculo();
@@ -232,17 +239,12 @@ public class EdicionDeVehiculosFrame extends JFrame {
         gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.30;
         panelFormulario.add(lblConductor, gbc);
 
-        txtConductor = new JTextField("(no aplica)");
-        txtConductor.setPreferredSize(new Dimension(320, 34));
-        txtConductor.setBackground(new Color(220, 220, 220));
-        txtConductor.setFont(new Font("SansSerif", Font.ITALIC, 15));
-        txtConductor.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(170, 170, 170), 1),
-                new EmptyBorder(6, 10, 6, 10)));
-        txtConductor.setEditable(false);
-        txtConductor.setEnabled(false);
+        cmbConductor = new JComboBox<>();
+        cmbConductor.setBackground(grisCampo);
+        cmbConductor.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        cmbConductor.setPreferredSize(new Dimension(320, 34));
         gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 0.50;
-        panelFormulario.add(txtConductor, gbc);
+        panelFormulario.add(cmbConductor, gbc);
 
         JLabel lblCapacidad = new JLabel("<html>Capacidad<br>(kg):</html>");
         lblCapacidad.setFont(new Font("SansSerif", Font.PLAIN, 16));
@@ -358,6 +360,32 @@ public class EdicionDeVehiculosFrame extends JFrame {
         return boton;
     }
 
+    private void cargarConductores() {
+        conductorIds.clear();
+        cmbConductor.removeAllItems();
+        // Opción vacía: sin conductor asignado
+        conductorIds.add(0);
+        cmbConductor.addItem("(Sin conductor)");
+        try {
+            ConexionServidor cs = ConexionServidor.getInstancia();
+            if (!cs.isConectado()) cs.conectar();
+            String respuesta = cs.enviarYEsperar("GET_CONDUCTORES");
+            if (respuesta == null || !respuesta.startsWith("LIST")) return;
+            // LIST|CONDUCTORES|id|nombre~...
+            String[] partes = respuesta.split("\\|", 3);
+            if (partes.length < 3 || partes[2].isEmpty()) return;
+            for (String fila : partes[2].split("~")) {
+                if (fila.startsWith("|")) fila = fila.substring(1);
+                String[] c = fila.split("\\|");
+                if (c.length < 2) continue;
+                conductorIds.add(Integer.parseInt(c[0]));
+                cmbConductor.addItem(c[1]);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error al cargar conductores: " + ex.getMessage());
+        }
+    }
+
     private void cargarDatosVehiculo() {
         String tipo;
         switch (vehiculoEditar.getClass().getSimpleName()) {
@@ -370,6 +398,11 @@ public class EdicionDeVehiculosFrame extends JFrame {
         txtCapacidad.setText(String.valueOf(vehiculoEditar.getCapacidadMaxima()));
         cmbEstado.setSelectedItem(estadoADisplay(vehiculoEditar.getEstado()));
         txtPlaca.setText(vehiculoEditar.getPlaca());
+
+        // Seleccionar el conductor ya asignado
+        int idConductorActual = vehiculoEditar.getIdConductor();
+        int indexSeleccionado = conductorIds.indexOf(idConductorActual);
+        cmbConductor.setSelectedIndex(indexSeleccionado >= 0 ? indexSeleccionado : 0);
     }
 
     private String estadoADisplay(EstadoVehiculo estado) {
@@ -408,20 +441,25 @@ public class EdicionDeVehiculosFrame extends JFrame {
         }
 
         String estadoDb = displayAEstado(estadoStr).toDbString();
+        int idConductorSeleccionado = conductorIds.get(
+                Math.max(0, cmbConductor.getSelectedIndex()));
 
         try {
             ConexionServidor cs = ConexionServidor.getInstancia();
             String resp;
             if (vehiculoEditar == null) {
-                // CREATE_VEHICULO|placa|tipo|capacidad|estado
+                // CREATE_VEHICULO|placa|tipo|capacidad|estado|idConductor
                 String tipoDisplay = cmbTipoVehiculo.getSelectedItem().toString();
                 String tipoServidor = tipoDisplay.equals("Camión") ? "Camion"
                         : tipoDisplay.equals("Furgón") ? "Furgon" : "Moto";
-                resp = cs.enviarYEsperar("CREATE_VEHICULO|" + placa + "|" + tipoServidor + "|" + capacidad + "|" + estadoDb);
+                resp = cs.enviarYEsperar("CREATE_VEHICULO|" + placa + "|" + tipoServidor + "|"
+                        + capacidad + "|" + estadoDb + "|" + idConductorSeleccionado);
             } else {
-                // UPDATE_VEHICULO|id|placa|tipo|capacidad|estado
-                String tipoServidor = vehiculoEditar.getClass().getSimpleName(); // "Camion", "Moto", "Furgon"
-                resp = cs.enviarYEsperar("UPDATE_VEHICULO|" + vehiculoEditar.getId() + "|" + placa + "|" + tipoServidor + "|" + capacidad + "|" + estadoDb);
+                // UPDATE_VEHICULO|id|placa|tipo|capacidad|estado|idConductor
+                String tipoServidor = vehiculoEditar.getClass().getSimpleName();
+                resp = cs.enviarYEsperar("UPDATE_VEHICULO|" + vehiculoEditar.getId() + "|"
+                        + placa + "|" + tipoServidor + "|" + capacidad + "|" + estadoDb
+                        + "|" + idConductorSeleccionado);
             }
             if (resp != null && resp.startsWith("OK")) {
                 String msg = vehiculoEditar == null ? "Vehículo registrado correctamente." : "Vehículo actualizado correctamente.";
