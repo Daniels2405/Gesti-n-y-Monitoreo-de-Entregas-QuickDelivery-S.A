@@ -75,6 +75,33 @@ public class UsuarioDAO {
     }
 
     /**
+     * Retorna la lista de todos los usuarios con rol {@code conductor}.
+     *
+     * @return lista de {@link Usuario} con rol conductor; vacía si no hay registros.
+     * @throws ConexionException si no se puede obtener una conexión a la base de datos.
+     * @throws SQLException      si ocurre un error durante la consulta SQL.
+     */
+    public List<Usuario> obtenerConductores() throws ConexionException, SQLException {
+        List<Usuario> lista = new ArrayList<>();
+        String sql = "SELECT u.id_usuario, u.nombre, u.username, u.pass_hash, " +
+                     "u.estado, r.nombre AS rol " +
+                     "FROM usuario u " +
+                     "JOIN rol r ON u.id_rol = r.id_rol " +
+                     "WHERE r.nombre = 'conductor' AND u.estado = 'activo' " +
+                     "ORDER BY u.nombre";
+
+        try (Connection conexion = ConexionDB.getConexion();
+             Statement stm = conexion.createStatement();
+             ResultSet rs = stm.executeQuery(sql)) {
+
+            while (rs.next()) {
+                lista.add(mapearUsuario(rs));
+            }
+        }
+        return lista;
+    }
+
+    /**
      * Busca y retorna un usuario por su nombre de usuario (username).
      *
      * @param username nombre de usuario único a buscar.

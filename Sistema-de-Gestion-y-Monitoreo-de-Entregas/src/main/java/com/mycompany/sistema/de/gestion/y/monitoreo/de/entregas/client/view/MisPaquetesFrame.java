@@ -342,11 +342,12 @@ public class MisPaquetesFrame extends JFrame {
             ConexionServidor cs = ConexionServidor.getInstancia();
             if (!cs.isConectado()) cs.conectar();
             // LIST|PAQUETES|id|codigo|descripcion|peso|estado~...  (EN_TRANSITO solamente)
-            String resp = cs.enviarYEsperar("GET_PAQUETES_ESTADO|EN_TRANSITO");
+            String resp = cs.enviarYEsperar("GET_MIS_PAQUETES|" + usuarioActual.getId());
             if (resp != null && resp.startsWith("LIST|PAQUETES")) {
                 String[] partes = resp.split("\\|", 3);
                 if (partes.length == 3 && !partes[2].isEmpty()) {
                     for (String fila : partes[2].split("~")) {
+                        if (fila.startsWith("|")) fila = fila.substring(1);
                         String[] c = fila.split("\\|");
                         if (c.length < 5) continue;
                         listaPaquetes.add(c);

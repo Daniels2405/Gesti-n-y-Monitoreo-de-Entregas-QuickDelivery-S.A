@@ -498,6 +498,7 @@ public class AsignacionDePaquetesFrame extends JFrame {
             String[] partes = respuesta.split("\\|", 3);
             if (partes.length < 3 || partes[2].isEmpty()) return;
             for (String fila : partes[2].split("~")) {
+                if (fila.startsWith("|")) fila = fila.substring(1);
                 String[] c = fila.split("\\|");
                 if (c.length < 5) continue;
                 Paquete p = new Paquete(Integer.parseInt(c[0]), c[1], c[2], Double.parseDouble(c[3]), EstadoPaquete.valueOf(c[4]));
@@ -521,6 +522,7 @@ public class AsignacionDePaquetesFrame extends JFrame {
             String[] partes = respuesta.split("\\|", 3);
             if (partes.length < 3 || partes[2].isEmpty()) return;
             for (String fila : partes[2].split("~")) {
+                if (fila.startsWith("|")) fila = fila.substring(1);
                 String[] c = fila.split("\\|");
                 if (c.length < 5) continue;
                 // c[0]=id, c[1]=placa, c[2]=tipo, c[3]=capacidad, c[4]=estado
@@ -544,6 +546,7 @@ public class AsignacionDePaquetesFrame extends JFrame {
             String[] partes = respuesta.split("\\|", 3);
             if (partes.length < 3 || partes[2].isEmpty()) return;
             for (String fila : partes[2].split("~")) {
+                if (fila.startsWith("|")) fila = fila.substring(1);
                 String[] c = fila.split("\\|");
                 if (c.length < 4) continue;
                 listaAsignaciones.add(c);

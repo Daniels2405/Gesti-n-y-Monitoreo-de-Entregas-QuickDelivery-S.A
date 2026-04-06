@@ -56,6 +56,18 @@ public class VehiculoController {
     }
 
     /**
+     * Retorna el vehículo asignado a un conductor específico.
+     *
+     * @param idConductor identificador del conductor.
+     * @return el {@link Vehiculo} asignado, o {@code null} si no tiene vehículo.
+     * @throws ConexionException si no se puede obtener una conexión a la base de datos.
+     * @throws SQLException      si ocurre un error durante la consulta SQL.
+     */
+    public Vehiculo obtenerPorConductor(int idConductor) throws ConexionException, SQLException {
+        return vehiculoDAO.obtenerPorConductor(idConductor);
+    }
+
+    /**
      * Registra un nuevo vehículo en el sistema.
      *
      * @param vehiculo vehículo a registrar con todos sus campos obligatorios definidos.

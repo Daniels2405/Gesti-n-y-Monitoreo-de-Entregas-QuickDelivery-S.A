@@ -24,6 +24,9 @@ public abstract class Vehiculo {
     /** Estado operativo actual del vehículo. */
     protected EstadoVehiculo estado;
 
+    /** ID del conductor asignado; 0 si no tiene conductor asignado. */
+    protected int idConductor;
+
     /**
      * Constructor sin argumentos requerido para frameworks de persistencia
      * y deserialización.
@@ -124,6 +127,24 @@ public abstract class Vehiculo {
      */
     public void setEstado(EstadoVehiculo estado) {
         this.estado = estado;
+    }
+
+    /**
+     * Retorna el ID del conductor asignado al vehículo.
+     *
+     * @return id del conductor, o {@code 0} si no tiene conductor asignado.
+     */
+    public int getIdConductor() {
+        return idConductor;
+    }
+
+    /**
+     * Establece el conductor asignado al vehículo.
+     *
+     * @param idConductor id del conductor; usar {@code 0} para desasignar.
+     */
+    public void setIdConductor(int idConductor) {
+        this.idConductor = idConductor;
     }
 
     /**
