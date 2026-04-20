@@ -336,7 +336,7 @@ public class ClientHandler implements Runnable {
             v.setCapacidadMaxima(Double.parseDouble(p[3]));
             v.setEstado(EstadoVehiculo.fromString(p[4]));
             v.setIdConductor(Integer.parseInt(p[5]));
-            vehiculoCtrl.registrar(v);
+            vehiculoCtrl.registrar(v, usuarioActual.getId());
             enviar("OK|Vehículo registrado");
         } catch (Exception e) {
             enviar("ERROR|" + e.getMessage());
@@ -354,7 +354,7 @@ public class ClientHandler implements Runnable {
             v.setCapacidadMaxima(Double.parseDouble(p[4]));
             v.setEstado(EstadoVehiculo.fromString(p[5]));
             v.setIdConductor(Integer.parseInt(p[6]));
-            vehiculoCtrl.actualizar(v);
+            vehiculoCtrl.actualizar(v, usuarioActual.getId());
             enviar("OK|Vehículo actualizado");
         } catch (Exception e) {
             enviar("ERROR|" + e.getMessage());
@@ -366,7 +366,7 @@ public class ClientHandler implements Runnable {
         if (usuarioActual.getRol() == Rol.CONDUCTOR) { enviar("FORBIDDEN|Sin permisos"); return; }
         if (p.length < 2) { enviar("ERROR|Formato: DELETE_VEHICULO|id"); return; }
         try {
-            vehiculoCtrl.eliminar(Integer.parseInt(p[1]));
+            vehiculoCtrl.eliminar(Integer.parseInt(p[1]), usuarioActual.getId());
             enviar("OK|Vehículo eliminado");
         } catch (Exception e) {
             enviar("ERROR|" + e.getMessage());
@@ -417,7 +417,7 @@ public class ClientHandler implements Runnable {
             nuevo.setDescripcion(p[2]);
             nuevo.setPeso(Double.parseDouble(p[3]));
             nuevo.setEstado(EstadoPaquete.EN_ESPERA);
-            paqueteCtrl.registrar(nuevo);
+            paqueteCtrl.registrar(nuevo, usuarioActual.getId());
             enviar("OK|Paquete registrado");
         } catch (Exception e) {
             enviar("ERROR|" + e.getMessage());
@@ -433,7 +433,7 @@ public class ClientHandler implements Runnable {
             paquete.setCodigo(p[2]);
             paquete.setDescripcion(p[3]);
             paquete.setPeso(Double.parseDouble(p[4]));
-            paqueteCtrl.actualizar(paquete);
+            paqueteCtrl.actualizar(paquete, usuarioActual.getId());
             enviar("OK|Paquete actualizado");
         } catch (Exception e) {
             enviar("ERROR|" + e.getMessage());
@@ -444,7 +444,7 @@ public class ClientHandler implements Runnable {
     private void manejarDeletePaquete(String[] p) {
         if (p.length < 2) { enviar("ERROR|Formato: DELETE_PAQUETE|id"); return; }
         try {
-            paqueteCtrl.eliminar(Integer.parseInt(p[1]));
+            paqueteCtrl.eliminar(Integer.parseInt(p[1]), usuarioActual.getId());
             enviar("OK|Paquete eliminado");
         } catch (Exception e) {
             enviar("ERROR|" + e.getMessage());
@@ -469,7 +469,7 @@ public class ClientHandler implements Runnable {
             if (paquete == null)  { enviar("ERROR|Paquete no encontrado");  return; }
             if (vehiculo == null) { enviar("ERROR|Vehículo no encontrado"); return; }
 
-            boolean ok = asignCtrl.asignarPaquete(Arrays.asList(vehiculo), paquete);
+            boolean ok = asignCtrl.asignarPaquete(Arrays.asList(vehiculo), paquete, usuarioActual.getId());
             if (ok) enviar("OK|Paquete asignado correctamente");
             else    enviar("ERROR|No se pudo asignar: verifique estado y capacidad del vehículo");
         } catch (Exception e) {
@@ -630,7 +630,7 @@ public class ClientHandler implements Runnable {
             if (paquete == null) { enviar("ERROR|Paquete no encontrado"); return; }
 
             paquete.setEstado(nuevoEstado);
-            paqueteCtrl.actualizar(paquete);
+            paqueteCtrl.actualizar(paquete, usuarioActual.getId());
 
             // Cerrar el ciclo: liberar el vehículo cuando el paquete termina
             if (nuevoEstado == EstadoPaquete.ENTREGADO || nuevoEstado == EstadoPaquete.INCIDENCIA) {
@@ -657,7 +657,7 @@ public class ClientHandler implements Runnable {
                 if (a.getPaquete().getId() == idPaquete) {
                     Vehiculo v = a.getVehiculo();
                     v.setEstado(EstadoVehiculo.DISPONIBLE);
-                    vehiculoCtrl.actualizar(v);
+                    vehiculoCtrl.actualizar(v, 0);  // 0 = acción automática del sistema
                     Logger.registrar("VEHICULO_LIBERADO", "SISTEMA",
                             "Vehículo#" + v.getId() + " disponible tras paquete#" + idPaquete);
                     break;
@@ -708,7 +708,7 @@ public class ClientHandler implements Runnable {
             Paquete paquete = paqueteCtrl.obtenerPorId(idPaquete);
             if (paquete != null) {
                 paquete.setEstado(EstadoPaquete.INCIDENCIA);
-                paqueteCtrl.actualizar(paquete);
+                paqueteCtrl.actualizar(paquete, usuarioActual.getId());
                 liberarVehiculo(idPaquete);
             }
 

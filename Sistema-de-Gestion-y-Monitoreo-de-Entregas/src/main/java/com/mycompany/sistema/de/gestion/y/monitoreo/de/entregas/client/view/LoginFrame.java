@@ -179,7 +179,7 @@ public class LoginFrame extends JFrame {
     }
 
     private void cargarLogo() {
-        URL rutaImagen = getClass().getResource("/images/logo_quickdelivery.png");
+        URL rutaImagen = getClass().getResource("/imagenes/logo_quickdelivery.png");
         if (rutaImagen != null) {
             ImageIcon iconoOriginal = new ImageIcon(rutaImagen);
             Image imagenEscalada = iconoOriginal.getImage().getScaledInstance(420, 190, Image.SCALE_SMOOTH);

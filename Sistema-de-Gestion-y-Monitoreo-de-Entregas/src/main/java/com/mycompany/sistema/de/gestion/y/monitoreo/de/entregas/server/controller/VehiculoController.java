@@ -1,7 +1,9 @@
 package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.controller;
 
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.AuditoriaDAO;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.VehiculoDAO;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.TipoAccion;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Vehiculo;
 
 import java.sql.SQLException;
@@ -19,6 +21,9 @@ public class VehiculoController {
 
     /** DAO para operaciones sobre vehículos en la base de datos. */
     private final VehiculoDAO vehiculoDAO = new VehiculoDAO();
+
+    /** DAO para registro de auditoría en la tabla {@code auditoria_log}. */
+    private final AuditoriaDAO auditoriaDAO = new AuditoriaDAO();
 
 
     /**
@@ -68,38 +73,55 @@ public class VehiculoController {
     }
 
     /**
-     * Registra un nuevo vehículo en el sistema.
+     * Registra un nuevo vehículo en el sistema y guarda la acción en auditoría.
      *
      * @param vehiculo vehículo a registrar con todos sus campos obligatorios definidos.
+     * @param idActor  identificador del usuario que realiza la acción.
      * @return {@code true} si se insertó al menos una fila; {@code false} en caso contrario.
      * @throws ConexionException si no se puede obtener una conexión a la base de datos.
      * @throws SQLException      si ocurre un error durante la inserción SQL.
      */
-    public boolean registrar(Vehiculo vehiculo) throws ConexionException, SQLException {
-        return vehiculoDAO.insertar(vehiculo);
+    public boolean registrar(Vehiculo vehiculo, int idActor) throws ConexionException, SQLException {
+        boolean ok = vehiculoDAO.insertar(vehiculo);
+        if (ok) {
+            auditoriaDAO.registrar(idActor, TipoAccion.CREATE, "vehiculo",
+                    vehiculo.getId(), "Placa: " + vehiculo.getPlaca());
+        }
+        return ok;
     }
 
     /**
-     * Actualiza los datos de un vehículo existente en el sistema.
+     * Actualiza los datos de un vehículo existente en el sistema y guarda la acción en auditoría.
      *
      * @param vehiculo vehículo con los datos modificados; debe tener un {@code id} válido.
+     * @param idActor  identificador del usuario que realiza la acción.
      * @return {@code true} si se actualizó al menos una fila; {@code false} si no existía el registro.
      * @throws ConexionException si no se puede obtener una conexión a la base de datos.
      * @throws SQLException      si ocurre un error durante la actualización SQL.
      */
-    public boolean actualizar(Vehiculo vehiculo) throws ConexionException, SQLException {
-        return vehiculoDAO.actualizar(vehiculo);
+    public boolean actualizar(Vehiculo vehiculo, int idActor) throws ConexionException, SQLException {
+        boolean ok = vehiculoDAO.actualizar(vehiculo);
+        if (ok) {
+            auditoriaDAO.registrar(idActor, TipoAccion.UPDATE, "vehiculo",
+                    vehiculo.getId(), "Placa: " + vehiculo.getPlaca() + " | Estado: " + vehiculo.getEstado());
+        }
+        return ok;
     }
 
     /**
-     * Elimina un vehículo del sistema por su identificador único.
+     * Elimina un vehículo del sistema por su identificador único y guarda la acción en auditoría.
      *
-     * @param id identificador del vehículo a eliminar.
+     * @param id      identificador del vehículo a eliminar.
+     * @param idActor identificador del usuario que realiza la acción.
      * @return {@code true} si se eliminó al menos una fila; {@code false} si no existía el registro.
      * @throws ConexionException si no se puede obtener una conexión a la base de datos.
      * @throws SQLException      si ocurre un error durante la eliminación SQL.
      */
-    public boolean eliminar(int id) throws ConexionException, SQLException {
-        return vehiculoDAO.eliminar(id);
+    public boolean eliminar(int id, int idActor) throws ConexionException, SQLException {
+        boolean ok = vehiculoDAO.eliminar(id);
+        if (ok) {
+            auditoriaDAO.registrar(idActor, TipoAccion.DELETE, "vehiculo", id, "Vehículo eliminado");
+        }
+        return ok;
     }
 }
