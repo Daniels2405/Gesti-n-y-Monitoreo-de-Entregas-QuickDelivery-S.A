@@ -8,6 +8,7 @@ import java.awt.Color;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -27,6 +28,8 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 
@@ -73,10 +76,17 @@ public class MonitorDeEntregasFrame extends JFrame {
     private JButton btnSiguiente;
 
     private static final int FILAS_POR_PAGINA = 10;
+    /** Intervalo de refresco automático del monitor (5 segundos). */
+    private static final int INTERVALO_REFRESCO_MS = 5000;
 
     private final Usuario usuarioActual;
     private List<String[]> listaAuditoria = new ArrayList<>();
     private int paginaActual = 0;
+
+    /** Timer que dispara el refresco periódico en el EDT. */
+    private Timer timerRefresco;
+    /** Evita lanzar un nuevo SwingWorker si el anterior aún no terminó. */
+    private final AtomicBoolean refrescando = new AtomicBoolean(false);
 
     public MonitorDeEntregasFrame(Usuario usuario) {
         this.usuarioActual = usuario;
@@ -87,10 +97,22 @@ public class MonitorDeEntregasFrame extends JFrame {
 
         cargarMonitor();
         cargarEstadoEntregas();
+
+        // Iniciar refresco automático cada 5 segundos
+        timerRefresco = new Timer(INTERVALO_REFRESCO_MS, e -> cargarMonitorAsync());
+        timerRefresco.start();
     }
 
     private void configurarVentana() {
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                if (timerRefresco != null) timerRefresco.stop();
+                dispose();
+                System.exit(0);
+            }
+        });
         setSize(1280, 760);
         setMinimumSize(new Dimension(1100, 700));
     }
@@ -175,14 +197,17 @@ public class MonitorDeEntregasFrame extends JFrame {
         btnMonitor    = crearBotonMenu("Monitor",     turquesaOscuro, Color.WHITE);
 
         btnDashboard.addActionListener(e -> {
+            if (timerRefresco != null) timerRefresco.stop();
             dispose();
             SwingUtilities.invokeLater(() -> new MenuDespachadorFrame(usuarioActual).setVisible(true));
         });
         btnPaquetes.addActionListener(e -> {
+            if (timerRefresco != null) timerRefresco.stop();
             dispose();
             SwingUtilities.invokeLater(() -> new GestionDePaquetesFrame(usuarioActual).setVisible(true));
         });
         btnAsignacion.addActionListener(e -> {
+            if (timerRefresco != null) timerRefresco.stop();
             dispose();
             SwingUtilities.invokeLater(() -> new AsignacionDePaquetesFrame(usuarioActual).setVisible(true));
         });
@@ -537,6 +562,80 @@ public class MonitorDeEntregasFrame extends JFrame {
         }
     }
 
+    /**
+     * Versión no bloqueante de {@link #cargarMonitor()} que ejecuta la
+     * comunicación con el servidor en un hilo de fondo (SwingWorker) y
+     * actualiza los modelos de tabla de vuelta en el EDT una vez terminado.
+     *
+     * <p>Si ya hay un refresco en curso ({@code refrescando == true}) el
+     * nuevo tick del timer se descarta para evitar acumulación de hilos.</p>
+     */
+    private void cargarMonitorAsync() {
+        if (!refrescando.compareAndSet(false, true)) {
+            return; // refresco anterior aún en progreso
+        }
+
+        new SwingWorker<String[], Void>() {
+            @Override
+            protected String[] doInBackground() {
+                // Toda la E/S de red ocurre fuera del EDT
+                try {
+                    ConexionServidor cs = ConexionServidor.getInstancia();
+                    if (!cs.isConectado()) cs.conectar();
+                    String respV = cs.enviarYEsperar("GET_MONITOR");
+                    String respP = cs.leer();
+                    return new String[]{respV, respP};
+                } catch (IOException ex) {
+                    return new String[]{null, null};
+                }
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    String[] resp = get();
+                    if (resp[0] == null && resp[1] == null) return; // error de red silencioso
+
+                    // Actualizar tabla de vehículos
+                    modeloVehiculosRuta.setRowCount(0);
+                    if (resp[0] != null && resp[0].startsWith("LIST|MONITOR_VEHICULOS")) {
+                        String[] partes = resp[0].split("\\|", 3);
+                        if (partes.length == 3 && !partes[2].isEmpty()) {
+                            for (String fila : partes[2].split("~")) {
+                                String[] c = fila.split("\\|");
+                                if (c.length < 4) continue;
+                                String tipo;
+                                switch (c[2]) {
+                                    case "Camion": tipo = "Camión"; break;
+                                    case "Moto":   tipo = "Moto";   break;
+                                    default:       tipo = "Furgón"; break;
+                                }
+                                modeloVehiculosRuta.addRow(new Object[]{c[1], tipo, "En Ruta", "—"});
+                            }
+                        }
+                    }
+
+                    // Actualizar tabla de paquetes
+                    modeloEstadoPaquetes.setRowCount(0);
+                    if (resp[1] != null && resp[1].startsWith("LIST|MONITOR_PAQUETES")) {
+                        String[] partes = resp[1].split("\\|", 3);
+                        if (partes.length == 3 && !partes[2].isEmpty()) {
+                            for (String fila : partes[2].split("~")) {
+                                String[] c = fila.split("\\|");
+                                if (c.length < 5) continue;
+                                modeloEstadoPaquetes.addRow(new Object[]{c[0], c[1], c[2], c[4]});
+                            }
+                        }
+                    }
+                } catch (Exception ex) {
+                    // Ignorar: el refresco periódico no debe interrumpir al usuario
+                } finally {
+                    refrescando.set(false);
+                }
+            }
+        }.execute();
+    }
+
     private void cargarEstadoEntregas() {
         listaAuditoria.clear();
         paginaActual = 0;
@@ -611,13 +710,14 @@ public class MonitorDeEntregasFrame extends JFrame {
         int opcion = JOptionPane.showConfirmDialog(this,
                 "¿Desea cerrar sesión?", "QuickDelivery", JOptionPane.YES_NO_OPTION);
         if (opcion == JOptionPane.YES_OPTION) {
+            if (timerRefresco != null) timerRefresco.stop();
             dispose();
             SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));
         }
     }
 
     private void cargarLogoHeader() {
-        URL rutaImagen = getClass().getResource("/images/logo_quickdelivery_blanco.png");
+        URL rutaImagen = getClass().getResource("/imagenes/logo_quickdelivery.png");
         if (rutaImagen != null) {
             ImageIcon iconoOriginal = new ImageIcon(rutaImagen);
             Image imagenEscalada = iconoOriginal.getImage().getScaledInstance(145, 70, Image.SCALE_SMOOTH);

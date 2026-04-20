@@ -24,5 +24,8 @@ public enum TipoAccion {
     UPDATE,
 
     /** Eliminación de un registro del sistema. */
-    DELETE
+    DELETE,
+
+    /** Asignación de un paquete a un vehículo. */
+    ASIGNACION
 }

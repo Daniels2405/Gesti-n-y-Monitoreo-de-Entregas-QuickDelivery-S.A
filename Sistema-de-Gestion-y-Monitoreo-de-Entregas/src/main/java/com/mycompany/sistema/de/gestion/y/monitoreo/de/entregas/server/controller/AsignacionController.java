@@ -1,6 +1,7 @@
 package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.controller;
 
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.AsignacionDAO;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.AuditoriaDAO;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.PaqueteDAO;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.VehiculoDAO;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
@@ -8,6 +9,7 @@ import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Asignacion
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.EstadoPaquete;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.EstadoVehiculo;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Paquete;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.TipoAccion;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Vehiculo;
 
 import java.sql.SQLException;
@@ -34,6 +36,9 @@ public class AsignacionController {
     /** DAO para operaciones sobre paquetes en la base de datos. */
     private final PaqueteDAO paqueteDAO = new PaqueteDAO();
 
+    /** DAO para registro de auditoría en la tabla {@code auditoria_log}. */
+    private final AuditoriaDAO auditoriaDAO = new AuditoriaDAO();
+
 
     /**
      * Retorna la lista de todas las asignaciones registradas en el sistema.
@@ -56,12 +61,13 @@ public class AsignacionController {
      *
      * @param vehiculos lista de vehículos candidatos para la asignación.
      * @param paquete   paquete a asignar; debe ser no nulo y no estar previamente asignado.
+     * @param idActor   identificador del usuario que realiza la asignación.
      * @return {@code true} si se encontró un vehículo apto y la asignación se realizó;
      *         {@code false} si el paquete es nulo, ya está asignado o no hay vehículo disponible.
      * @throws ConexionException si no se puede obtener una conexión a la base de datos.
      * @throws SQLException      si ocurre un error al persistir los cambios.
      */
-    public boolean asignarPaquete(List<Vehiculo> vehiculos, Paquete paquete) throws ConexionException, SQLException {
+    public boolean asignarPaquete(List<Vehiculo> vehiculos, Paquete paquete, int idActor) throws ConexionException, SQLException {
         if (paquete == null || paquete.isAsignado()) {
             return false;
         }
@@ -74,7 +80,11 @@ public class AsignacionController {
 
             paqueteDAO.actualizar(paquete);
             vehiculoDAO.actualizar(vehiculo);
-            asignacionDAO.insertar(new Asignacion(0, vehiculo, paquete, LocalDateTime.now()));
+            Asignacion nueva = new Asignacion(0, vehiculo, paquete, LocalDateTime.now());
+            asignacionDAO.insertar(nueva);
+            auditoriaDAO.registrar(idActor, TipoAccion.ASIGNACION, "asignacion",
+                    paquete.getId(),
+                    "Paquete: " + paquete.getCodigo() + " | Vehículo: " + vehiculo.getPlaca());
             return true;
         }
 

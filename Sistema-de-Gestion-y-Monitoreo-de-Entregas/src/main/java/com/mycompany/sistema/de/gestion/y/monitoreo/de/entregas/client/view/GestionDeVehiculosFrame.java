@@ -413,7 +413,7 @@ public class GestionDeVehiculosFrame extends JFrame {
     }
 
     private void cargarLogoHeader() {
-        URL rutaImagen = getClass().getResource("/images/logo_quickdelivery_blanco.png");
+        URL rutaImagen = getClass().getResource("/imagenes/logo_quickdelivery.png");
         if (rutaImagen != null) {
             ImageIcon iconoOriginal = new ImageIcon(rutaImagen);
             Image imagenEscalada = iconoOriginal.getImage().getScaledInstance(145, 70, Image.SCALE_SMOOTH);

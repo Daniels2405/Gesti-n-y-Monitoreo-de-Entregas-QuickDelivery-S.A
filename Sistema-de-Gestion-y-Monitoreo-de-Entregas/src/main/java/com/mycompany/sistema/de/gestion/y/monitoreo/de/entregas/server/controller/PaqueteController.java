@@ -1,9 +1,11 @@
 package com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.controller;
 
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.AuditoriaDAO;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.server.dao.PaqueteDAO;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.exception.ConexionException;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.EstadoPaquete;
 import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.Paquete;
+import com.mycompany.sistema.de.gestion.y.monitoreo.de.entregas.model.TipoAccion;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -20,6 +22,9 @@ public class PaqueteController {
 
     /** DAO para operaciones sobre paquetes en la base de datos. */
     private final PaqueteDAO paqueteDAO = new PaqueteDAO();
+
+    /** DAO para registro de auditoría en la tabla {@code auditoria_log}. */
+    private final AuditoriaDAO auditoriaDAO = new AuditoriaDAO();
 
 
     /**
@@ -70,40 +75,57 @@ public class PaqueteController {
     }
 
     /**
-     * Registra un nuevo paquete en el sistema.
+     * Registra un nuevo paquete en el sistema y guarda la acción en auditoría.
      *
      * @param paquete paquete a registrar con todos sus campos obligatorios definidos.
+     * @param idActor identificador del usuario que realiza la acción.
      * @return {@code true} si se insertó al menos una fila; {@code false} en caso contrario.
      * @throws ConexionException si no se puede obtener una conexión a la base de datos.
      * @throws SQLException      si ocurre un error durante la inserción SQL.
      */
-    public boolean registrar(Paquete paquete) throws ConexionException, SQLException {
-        return paqueteDAO.insertar(paquete);
+    public boolean registrar(Paquete paquete, int idActor) throws ConexionException, SQLException {
+        boolean ok = paqueteDAO.insertar(paquete);
+        if (ok) {
+            auditoriaDAO.registrar(idActor, TipoAccion.CREATE, "paquete",
+                    paquete.getId(), "Código: " + paquete.getCodigo());
+        }
+        return ok;
     }
 
     // ----------------------------------------------------------------- UPDATE
 
     /**
-     * Actualiza los datos de un paquete existente en el sistema.
+     * Actualiza los datos de un paquete existente en el sistema y guarda la acción en auditoría.
      *
      * @param paquete paquete con los datos modificados; debe tener un {@code id} válido.
+     * @param idActor identificador del usuario que realiza la acción.
      * @return {@code true} si se actualizó al menos una fila; {@code false} si no existía el registro.
      * @throws ConexionException si no se puede obtener una conexión a la base de datos.
      * @throws SQLException      si ocurre un error durante la actualización SQL.
      */
-    public boolean actualizar(Paquete paquete) throws ConexionException, SQLException {
-        return paqueteDAO.actualizar(paquete);
+    public boolean actualizar(Paquete paquete, int idActor) throws ConexionException, SQLException {
+        boolean ok = paqueteDAO.actualizar(paquete);
+        if (ok) {
+            auditoriaDAO.registrar(idActor, TipoAccion.UPDATE, "paquete",
+                    paquete.getId(), "Estado: " + paquete.getEstado() + " | Código: " + paquete.getCodigo());
+        }
+        return ok;
     }
 
     /**
-     * Elimina un paquete del sistema por su identificador único.
+     * Elimina un paquete del sistema por su identificador único y guarda la acción en auditoría.
      *
-     * @param id identificador del paquete a eliminar.
+     * @param id      identificador del paquete a eliminar.
+     * @param idActor identificador del usuario que realiza la acción.
      * @return {@code true} si se eliminó al menos una fila; {@code false} si no existía el registro.
      * @throws ConexionException si no se puede obtener una conexión a la base de datos.
      * @throws SQLException      si ocurre un error durante la eliminación SQL.
      */
-    public boolean eliminar(int id) throws ConexionException, SQLException {
-        return paqueteDAO.eliminar(id);
+    public boolean eliminar(int id, int idActor) throws ConexionException, SQLException {
+        boolean ok = paqueteDAO.eliminar(id);
+        if (ok) {
+            auditoriaDAO.registrar(idActor, TipoAccion.DELETE, "paquete", id, "Paquete eliminado");
+        }
+        return ok;
     }
 }
