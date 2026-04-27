@@ -13,8 +13,6 @@
 | Dashboard Despachador | ![Despachador](docs/screenshots/dashboard_despachador.png) |
 | Dashboard Conductor | ![Conductor](docs/screenshots/dashboard_conductor.png) |
 
-> 📁 Las imágenes deben colocarse en la carpeta `docs/screenshots/` con los nombres exactos indicados arriba.
-
 ---
 
 ## 🧩 Descripción del proyecto
